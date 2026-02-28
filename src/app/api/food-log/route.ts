@@ -118,3 +118,36 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ error: 'Failed to delete food log entry' }, { status: 500 });
   }
 }
+
+// PUT /api/food-log - Update a food log entry
+export async function PUT(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const { id, quantity, unit, calories, protein, carbs, fat, source } = body;
+    
+    if (!id) {
+      return NextResponse.json({ error: 'Entry ID required' }, { status: 400 });
+    }
+
+    const entry = await db.foodLogEntry.update({
+      where: { id },
+      data: {
+        quantity: quantity,
+        unit: unit,
+        calories: calories,
+        protein: protein,
+        carbs: carbs,
+        fat: fat,
+        source: source,
+      },
+      include: {
+        food: true,
+      },
+    });
+
+    return NextResponse.json({ entry });
+  } catch (error) {
+    console.error('Error updating food log entry:', error);
+    return NextResponse.json({ error: 'Failed to update food log entry' }, { status: 500 });
+  }
+}

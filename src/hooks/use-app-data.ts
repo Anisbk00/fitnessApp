@@ -207,7 +207,30 @@ export function useFoodLog(date?: string) {
     }
   }, [fetchEntries]);
 
-  return { entries, isLoading, addEntry, deleteEntry, refetch: fetchEntries };
+  const updateEntry = useCallback(async (id: string, entry: Partial<FoodLogEntry> & { foodName?: string }) => {
+    try {
+      const response = await fetch('/api/food-log', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id,
+          quantity: entry.quantity,
+          unit: entry.unit,
+          calories: entry.calories,
+          protein: entry.protein,
+          carbs: entry.carbs,
+          fat: entry.fat,
+          source: entry.source,
+        }),
+      });
+      if (!response.ok) throw new Error('Failed to update entry');
+      await fetchEntries();
+    } catch (err) {
+      console.error('Error updating entry:', err);
+    }
+  }, [fetchEntries]);
+
+  return { entries, isLoading, addEntry, updateEntry, deleteEntry, refetch: fetchEntries };
 }
 
 // Measurements Hook
@@ -388,6 +411,14 @@ export interface HydrationData {
   entries: Measurement[]; // water measurement entries
 }
 
+const WATER_TARGET_KEY = 'water-target-ml';
+
+function getStoredTarget(): number {
+  if (typeof window === 'undefined') return DEFAULT_TARGETS.water;
+  const stored = localStorage.getItem(WATER_TARGET_KEY);
+  return stored ? parseInt(stored, 10) : DEFAULT_TARGETS.water;
+}
+
 export function useHydration(date?: string) {
   const [hydration, setHydration] = useState<HydrationData>({
     current: 0,
@@ -405,13 +436,16 @@ export function useHydration(date?: string) {
       if (!response.ok) throw new Error('Failed to fetch hydration');
       const data = await response.json();
       
+      // Get stored target
+      const target = getStoredTarget();
+      
       // Sum all water measurements for today - handle empty/undefined arrays
       const measurements = Array.isArray(data.measurements) ? data.measurements : [];
       const totalWater = measurements.reduce((sum: number, m: { value: number }) => sum + (m.value || 0), 0);
       
       setHydration({
         current: totalWater,
-        target: DEFAULT_TARGETS.water,
+        target,
         glasses: Math.floor(totalWater / 250),
         entries: measurements,
       });
@@ -420,7 +454,7 @@ export function useHydration(date?: string) {
       // Keep hydration at 0 on error
       setHydration({
         current: 0,
-        target: DEFAULT_TARGETS.water,
+        target: getStoredTarget(),
         glasses: 0,
         entries: [],
       });
@@ -488,5 +522,15 @@ export function useHydration(date?: string) {
     }
   }, [fetchHydration, date]);
 
-  return { hydration, isLoading, addWater, removeLastWater, clearAllWater, refetch: fetchHydration };
+  const updateTarget = useCallback((newTarget: number) => {
+    // Clamp target between 500ml and 5000ml
+    const clampedTarget = Math.max(500, Math.min(5000, newTarget));
+    localStorage.setItem(WATER_TARGET_KEY, clampedTarget.toString());
+    setHydration(prev => ({
+      ...prev,
+      target: clampedTarget,
+    }));
+  }, []);
+
+  return { hydration, isLoading, addWater, removeLastWater, clearAllWater, updateTarget, refetch: fetchHydration };
 }

@@ -217,6 +217,7 @@ function HydrationTracker({
   onAddWater,
   onRemoveWater,
   onClearWater,
+  onUpdateTarget,
   entries,
 }: {
   current: number;
@@ -224,11 +225,20 @@ function HydrationTracker({
   onAddWater: (ml: number) => Promise<void>;
   onRemoveWater: () => Promise<void>;
   onClearWater: () => Promise<void>;
+  onUpdateTarget: (ml: number) => void;
   entries: { id: string; value: number; capturedAt: string }[];
 }) {
   const [isAdding, setIsAdding] = React.useState(false);
   const [showActions, setShowActions] = React.useState(false);
+  const [showTargetEdit, setShowTargetEdit] = React.useState(false);
+  
   const isExceeded = current > target;
+  const isGoalMet = current >= target && !isExceeded;
+  
+  // Calculate glasses based on target (each glass is 250ml)
+  const glassMl = 250;
+  const totalGlasses = Math.ceil(target / glassMl);
+  const filledGlasses = Math.floor(current / glassMl);
 
   const handleAddWater = async (ml: number) => {
     setIsAdding(true);
@@ -270,21 +280,26 @@ function HydrationTracker({
       "rounded-2xl p-4 border",
       isExceeded 
         ? "bg-gradient-to-br from-rose-500/10 to-red-500/10 border-rose-500/20"
-        : "bg-gradient-to-br from-cyan-500/10 to-blue-500/10 border-cyan-500/20"
+        : isGoalMet
+          ? "bg-gradient-to-br from-emerald-500/10 to-green-500/10 border-emerald-500/20"
+          : "bg-gradient-to-br from-cyan-500/10 to-blue-500/10 border-cyan-500/20"
     )}>
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
-          <Droplets className={cn("w-5 h-5", isExceeded ? "text-rose-500" : "text-cyan-500")} />
+          <Droplets className={cn(
+            "w-5 h-5",
+            isExceeded ? "text-rose-500" : isGoalMet ? "text-emerald-500" : "text-cyan-500"
+          )} />
           <span className="font-medium">Hydration</span>
+          {isGoalMet && <span className="text-emerald-500 text-xs">✓ Goal!</span>}
         </div>
         <div className="flex items-center gap-2">
-          <span className={cn(
-            "text-sm",
-            isExceeded ? "text-rose-500 font-medium" : "text-muted-foreground"
-          )}>
+          <button
+            onClick={() => setShowTargetEdit(!showTargetEdit)}
+            className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
             {Math.round(current)} / {target} ml
-            {isExceeded && " ⚠️"}
-          </span>
+          </button>
           {entries.length > 0 && (
             <button
               onClick={() => setShowActions(!showActions)}
@@ -296,35 +311,76 @@ function HydrationTracker({
         </div>
       </div>
 
-      {/* Glass indicators */}
+      {/* Target adjustment */}
+      <AnimatePresence>
+        {showTargetEdit && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            className="overflow-hidden mb-3"
+          >
+            <div className="flex items-center justify-between gap-2 p-2 rounded-xl bg-muted/30">
+              <span className="text-xs text-muted-foreground">Daily Goal</span>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => onUpdateTarget(target - 250)}
+                  className="w-7 h-7 rounded-lg bg-muted flex items-center justify-center hover:bg-muted/80 transition-colors"
+                >
+                  <Minus className="w-4 h-4" />
+                </button>
+                <span className="text-sm font-medium w-16 text-center">{target} ml</span>
+                <button
+                  onClick={() => onUpdateTarget(target + 250)}
+                  className="w-7 h-7 rounded-lg bg-muted flex items-center justify-center hover:bg-muted/80 transition-colors"
+                >
+                  <Plus className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Glass indicators - dynamically sized based on target */}
       <div className="flex items-center gap-1 mb-4 flex-wrap">
-        {Array.from({ length: 8 }).map((_, i) => {
-          const glassMl = 250;
+        {Array.from({ length: Math.min(totalGlasses, 12) }).map((_, i) => {
           const filled = (i + 1) * glassMl <= current;
           const partial = i * glassMl < current && (i + 1) * glassMl > current;
+          const isTargetGlass = (i + 1) * glassMl <= target;
           
           return (
             <div
               key={i}
               className={cn(
-                "w-6 h-8 rounded-md border-2 flex items-end justify-center overflow-hidden transition-colors",
+                "w-5 h-7 rounded-md border-2 flex items-end justify-center overflow-hidden transition-colors",
                 filled 
                   ? isExceeded 
                     ? "border-rose-500 bg-rose-500/30" 
-                    : "border-cyan-500 bg-cyan-500/30"
-                  : "border-muted/30 bg-muted/10",
-                partial && (isExceeded ? "border-rose-500" : "border-cyan-500")
+                    : isGoalMet
+                      ? "border-emerald-500 bg-emerald-500/30"
+                      : "border-cyan-500 bg-cyan-500/30"
+                  : isTargetGlass
+                    ? "border-muted/50 bg-muted/20"
+                    : "border-muted/20 bg-muted/5",
+                partial && (isExceeded ? "border-rose-500" : isGoalMet ? "border-emerald-500" : "border-cyan-500")
               )}
             >
               {partial && (
                 <div
-                  className={cn("w-full", isExceeded ? "bg-rose-500/30" : "bg-cyan-500/30")}
+                  className={cn(
+                    "w-full",
+                    isExceeded ? "bg-rose-500/30" : isGoalMet ? "bg-emerald-500/30" : "bg-cyan-500/30"
+                  )}
                   style={{ height: `${((current % glassMl) / glassMl) * 100}%` }}
                 />
               )}
             </div>
           );
         })}
+        {totalGlasses > 12 && (
+          <span className="text-xs text-muted-foreground ml-1">+{totalGlasses - 12} more</span>
+        )}
       </div>
 
       {/* Action buttons (undo/clear) */}
@@ -367,7 +423,9 @@ function HydrationTracker({
               "flex-1 py-2 px-3 rounded-xl text-sm font-medium transition-colors touch-manipulation disabled:opacity-50",
               isExceeded
                 ? "bg-rose-500/20 text-rose-600 dark:text-rose-400 hover:bg-rose-500/30"
-                : "bg-cyan-500/20 text-cyan-600 dark:text-cyan-400 hover:bg-cyan-500/30"
+                : isGoalMet
+                  ? "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/30"
+                  : "bg-cyan-500/20 text-cyan-600 dark:text-cyan-400 hover:bg-cyan-500/30"
             )}
           >
             +{amount.ml}ml
@@ -1077,8 +1135,11 @@ export function FoodsPage() {
 
   // Hooks
   const { nutrition, refetch: refetchNutrition } = useNutritionData();
-  const { entries, addEntry, deleteEntry, refetch: refetchFoodLog } = useFoodLog();
-  const { hydration, addWater, removeLastWater, clearAllWater, refetch: refetchHydration } = useHydration();
+  const { entries, addEntry, updateEntry, deleteEntry, refetch: refetchFoodLog } = useFoodLog();
+  const { hydration, addWater, removeLastWater, clearAllWater, updateTarget, refetch: refetchHydration } = useHydration();
+  
+  // Track editing state
+  const [editingEntry, setEditingEntry] = useState<MealEntry | null>(null);
 
   // Refetch all data
   const refetchAll = useCallback(async () => {
@@ -1161,23 +1222,39 @@ export function FoodsPage() {
   }, []);
 
   const handleConfirmAdd = useCallback(async (food: Food, quantity: number, meal: MealType) => {
-    // Add entry
-    await addEntry({
-      foodId: food.id,
-      foodName: food.name,
-      quantity,
-      unit: food.servingUnit,
-      calories: (food.calories * quantity) / 100,
-      protein: (food.protein * quantity) / 100,
-      carbs: (food.carbs * quantity) / 100,
-      fat: (food.fat * quantity) / 100,
-      source: meal,
-    });
+    // Check if we're editing an existing entry
+    if (editingEntry) {
+      await updateEntry(editingEntry.id, {
+        foodId: food.id,
+        foodName: food.name,
+        quantity,
+        unit: food.servingUnit,
+        calories: (food.calories * quantity) / 100,
+        protein: (food.protein * quantity) / 100,
+        carbs: (food.carbs * quantity) / 100,
+        fat: (food.fat * quantity) / 100,
+        source: meal,
+      });
+      setEditingEntry(null);
+    } else {
+      // Add new entry
+      await addEntry({
+        foodId: food.id,
+        foodName: food.name,
+        quantity,
+        unit: food.servingUnit,
+        calories: (food.calories * quantity) / 100,
+        protein: (food.protein * quantity) / 100,
+        carbs: (food.carbs * quantity) / 100,
+        fat: (food.fat * quantity) / 100,
+        source: meal,
+      });
+    }
     // Immediately refetch
     await refetchAll();
     setQuickAddOpen(false);
     setSelectedFood(null);
-  }, [addEntry, refetchAll]);
+  }, [addEntry, updateEntry, editingEntry, refetchAll]);
 
   const handleDeleteEntry = useCallback(async (entryId: string) => {
     await deleteEntry(entryId);
@@ -1186,7 +1263,11 @@ export function FoodsPage() {
   }, [deleteEntry, refetchAll]);
 
   const handleEditEntry = useCallback((entry: MealEntry, mealType: MealType) => {
-    setSelectedFood(entry.food);
+    setEditingEntry(entry);
+    setSelectedFood({
+      ...entry.food,
+      servingSize: entry.quantity, // Set servingSize to current quantity for editing
+    });
     setSelectedMealType(mealType);
     setQuickAddOpen(true);
   }, []);
@@ -1223,6 +1304,7 @@ export function FoodsPage() {
           onAddWater={handleAddWater}
           onRemoveWater={removeLastWater}
           onClearWater={clearAllWater}
+          onUpdateTarget={updateTarget}
           entries={hydration.entries}
         />
       </div>
@@ -1255,11 +1337,12 @@ export function FoodsPage() {
 
       {/* Quick Add Dialog - KEY ensures it remounts when mealType changes */}
       <QuickAddDialog
-        key={`${selectedFood?.id}-${selectedMealType}`}
+        key={`${selectedFood?.id}-${selectedMealType}-${editingEntry?.id || 'new'}`}
         open={quickAddOpen}
         onClose={() => {
           setQuickAddOpen(false);
           setSelectedFood(null);
+          setEditingEntry(null);
         }}
         food={selectedFood}
         mealType={selectedMealType}
