@@ -34,6 +34,9 @@ import {
   Beaker,
   Sparkles,
   Gauge,
+  X,
+  Save,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -42,6 +45,10 @@ import { Progress } from "@/components/ui/progress";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { ConfidenceBadge } from "@/components/fitness/confidence-badge";
 import { ProvenanceTag } from "@/components/fitness/provenance-tag";
 import { cn } from "@/lib/utils";
@@ -100,9 +107,16 @@ export interface ProfileData {
     id: string;
     date: string;
     imageUrl: string;
-    weight?: number;
+    weight?: number | null;
     notes?: string;
     isHighlight?: boolean;
+    bodyFat?: {
+      min: number;
+      max: number;
+      confidence: number;
+    } | null;
+    muscleMass?: number | null;
+    changeZones?: Array<{area: string; direction: string; confidence: number}> | null;
   }>;
   badges: Array<{
     id: string;
@@ -397,7 +411,7 @@ function EvolutionMetricsStrip({
   ];
 
   return (
-    <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide -mx-4 px-4">
+    <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide -mx-4 px-4">
       {metrics.map((metric, index) => {
         const Icon = metric.icon;
         return (
@@ -407,14 +421,14 @@ function EvolutionMetricsStrip({
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.05 }}
             onClick={() => onMetricTap(metric.id)}
-            className="flex-shrink-0 w-[68px] p-2.5 rounded-xl bg-card/80 backdrop-blur-sm border border-border/50 hover:border-emerald-500/30 transition-all active:scale-95"
+            className="flex-shrink-0 w-[72px] p-3 rounded-xl bg-card/80 backdrop-blur-sm border border-border/50 hover:border-emerald-500/30 transition-all active:scale-95 shadow-sm"
           >
-            <Icon className="w-3.5 h-3.5 text-muted-foreground mx-auto mb-1" />
+            <Icon className="w-4 h-4 text-muted-foreground mx-auto mb-1.5" />
             <div className="text-center">
-              <span className="text-base font-bold block leading-tight">{metric.value}</span>
-              <span className="text-[9px] text-muted-foreground">{metric.unit}</span>
+              <span className="text-lg font-bold block leading-tight">{metric.value}</span>
+              <span className="text-[10px] text-muted-foreground">{metric.unit}</span>
             </div>
-            <p className="text-[9px] text-muted-foreground mt-0.5 text-center truncate">{metric.label}</p>
+            <p className="text-[10px] text-muted-foreground mt-1 text-center truncate">{metric.label}</p>
           </motion.button>
         );
       })}
@@ -422,7 +436,7 @@ function EvolutionMetricsStrip({
   );
 }
 
-// AI Evolution Summary - APPROVED BY USER
+// AI Evolution Summary - APPROVED BY USER (Enhanced visibility)
 function AIEvolutionSummary({ stats, bodyComposition }: { stats: ProfileData["stats"]; bodyComposition: ProfileData["bodyComposition"] }) {
   const generateSummary = () => {
     const parts: string[] = [];
@@ -454,15 +468,21 @@ function AIEvolutionSummary({ stats, bodyComposition }: { stats: ProfileData["st
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="p-3 rounded-2xl bg-gradient-to-br from-purple-500/10 to-violet-500/10 border border-purple-500/20"
+      className="relative overflow-hidden p-4 rounded-2xl bg-gradient-to-br from-violet-500/20 via-purple-500/15 to-fuchsia-500/10 border-2 border-purple-500/30 shadow-lg shadow-purple-500/5"
     >
-      <div className="flex items-start gap-2.5">
-        <div className="w-8 h-8 rounded-xl bg-purple-500/20 flex items-center justify-center flex-shrink-0">
-          <Sparkles className="w-4 h-4 text-purple-500" />
+      {/* Animated background gradient */}
+      <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 via-violet-500/10 to-purple-500/5 animate-pulse" />
+      
+      <div className="relative flex items-start gap-3">
+        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-violet-600 flex items-center justify-center flex-shrink-0 shadow-md">
+          <Sparkles className="w-5 h-5 text-white" />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-purple-600 dark:text-purple-400">AI Evolution Summary</p>
-          <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+          <div className="flex items-center gap-2">
+            <p className="text-base font-semibold text-purple-700 dark:text-purple-300">AI Evolution Summary</p>
+            <Badge className="bg-purple-500/20 text-purple-600 text-[10px] px-1.5 py-0.5">AI</Badge>
+          </div>
+          <p className="text-sm text-foreground/80 mt-1.5 leading-relaxed">
             {generateSummary()}
           </p>
         </div>
@@ -1159,7 +1179,7 @@ function BadgeDetailSheet({
   );
 }
 
-// Photo Modal
+// Photo Modal with Body Composition Data
 function PhotoModal({
   open,
   onClose,
@@ -1171,33 +1191,215 @@ function PhotoModal({
 }) {
   if (!photo) return null;
 
+  const bodyFatAvg = photo.bodyFat ? (photo.bodyFat.min + photo.bodyFat.max) / 2 : null;
+
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-[90vw] max-h-[90vh] p-0 bg-black/95 border-none">
-        <div className="relative w-full h-[80vh] flex items-center justify-center">
-          <div className="aspect-[3/4] h-full bg-gradient-to-br from-emerald-500/20 to-teal-500/20 flex items-center justify-center">
-            <User className="w-24 h-24 text-emerald-500/30" />
+        <div className="relative w-full h-[80vh] flex">
+          {/* Photo View */}
+          <div className="flex-1 flex items-center justify-center">
+            <div className="aspect-[3/4] h-full bg-gradient-to-br from-emerald-500/20 to-teal-500/20 flex items-center justify-center">
+              <User className="w-24 h-24 text-emerald-500/30" />
+            </div>
           </div>
 
-          <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent">
-            <p className="text-white font-medium">{format(new Date(photo.date), "EEEE, MMMM d, yyyy")}</p>
-            {photo.weight && (
-              <p className="text-white/70 text-sm">Weight: {photo.weight} kg</p>
+          {/* Body Composition Panel */}
+          <div className="w-72 bg-black/90 border-l border-white/10 p-4 overflow-y-auto">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-white font-medium">AI Analysis</h3>
+              <button
+                onClick={onClose}
+                className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center"
+              >
+                <X className="w-4 h-4 text-white/70" />
+              </button>
+            </div>
+
+            {/* Date */}
+            <div className="mb-4">
+              <p className="text-white/50 text-xs">Captured</p>
+              <p className="text-white text-sm font-medium">{format(new Date(photo.date), "MMMM d, yyyy")}</p>
+            </div>
+
+            {/* Body Fat */}
+            {photo.bodyFat && (
+              <div className="mb-4 p-3 rounded-xl bg-white/5">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-white/70 text-xs">Body Fat</span>
+                  <ConfidenceBadge confidence={photo.bodyFat.confidence} size="xs" />
+                </div>
+                <div className="flex items-baseline gap-1">
+                  <span className="text-2xl font-bold text-purple-400">{bodyFatAvg?.toFixed(0)}%</span>
+                  <span className="text-white/50 text-xs">({photo.bodyFat.min}–{photo.bodyFat.max}%)</span>
+                </div>
+                <div className="mt-2 h-2 bg-white/10 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-gradient-to-r from-purple-500 to-violet-500 rounded-full"
+                    style={{ width: `${Math.min(100, bodyFatAvg || 0)}%` }}
+                  />
+                </div>
+              </div>
             )}
+
+            {/* Muscle Mass */}
+            {photo.muscleMass && (
+              <div className="mb-4 p-3 rounded-xl bg-white/5">
+                <span className="text-white/70 text-xs">Muscle Mass</span>
+                <p className="text-xl font-bold text-emerald-400 mt-1">{photo.muscleMass.toFixed(1)} kg</p>
+              </div>
+            )}
+
+            {/* Change Zones */}
+            {photo.changeZones && photo.changeZones.length > 0 && (
+              <div className="mb-4">
+                <span className="text-white/70 text-xs">Detected Changes</span>
+                <div className="mt-2 space-y-2">
+                  {photo.changeZones.map((zone, index) => (
+                    <div key={index} className="flex items-center justify-between p-2 rounded-lg bg-white/5">
+                      <span className="text-white/80 text-xs capitalize">{zone.area}</span>
+                      <Badge className={cn(
+                        "text-[10px]",
+                        zone.direction === "improved" && "bg-emerald-500/20 text-emerald-400",
+                        zone.direction === "declined" && "bg-rose-500/20 text-rose-400",
+                        zone.direction === "stable" && "bg-slate-500/20 text-slate-400"
+                      )}>
+                        {zone.direction}
+                      </Badge>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Notes */}
             {photo.notes && (
-              <p className="text-white/60 text-xs mt-1">{photo.notes}</p>
+              <div className="mt-4 pt-4 border-t border-white/10">
+                <span className="text-white/50 text-xs">Notes</span>
+                <p className="text-white/80 text-sm mt-1">{photo.notes}</p>
+              </div>
+            )}
+
+            {/* No Data */}
+            {!photo.bodyFat && !photo.muscleMass && !photo.changeZones && (
+              <div className="text-center py-8">
+                <Brain className="w-10 h-10 mx-auto mb-2 text-white/20" />
+                <p className="text-white/50 text-sm">No AI analysis available for this photo</p>
+              </div>
             )}
           </div>
 
+          {/* Close button */}
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/20 flex items-center justify-center"
+            className="absolute top-4 left-4 w-10 h-10 rounded-full bg-white/20 flex items-center justify-center md:hidden"
           >
-            <ChevronRight className="w-5 h-5 text-white rotate-45" />
+            <ChevronLeft className="w-5 h-5 text-white" />
           </button>
         </div>
       </DialogContent>
     </Dialog>
+  );
+}
+
+// Edit Profile Form
+function EditProfileForm({
+  profile,
+  onSave,
+  onCancel,
+}: {
+  profile: ProfileData["profile"];
+  onSave: (updates: { name?: string; tagline?: string }) => Promise<void>;
+  onCancel: () => void;
+}) {
+  const [name, setName] = useState(profile.name);
+  const [tagline, setTagline] = useState("Building better habits, one day at a time");
+  const [isSaving, setIsSaving] = useState(false);
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      await onSave({ name, tagline });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  return (
+    <div className="px-6 space-y-4">
+      {/* Avatar */}
+      <div className="flex justify-center">
+        <div className="relative">
+          <div className="w-24 h-24 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white text-3xl font-bold">
+            {name.charAt(0).toUpperCase()}
+          </div>
+          <button className="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-lg">
+            <Camera className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+
+      {/* Name */}
+      <div className="space-y-2">
+        <Label htmlFor="name">Display Name</Label>
+        <Input
+          id="name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="Your name"
+          className="h-12"
+        />
+      </div>
+
+      {/* Tagline */}
+      <div className="space-y-2">
+        <Label htmlFor="tagline">Tagline</Label>
+        <Textarea
+          id="tagline"
+          value={tagline}
+          onChange={(e) => setTagline(e.target.value)}
+          placeholder="Your motivational tagline"
+          rows={3}
+          className="resize-none"
+        />
+      </div>
+
+      {/* Email (read-only) */}
+      <div className="space-y-2">
+        <Label htmlFor="email">Email</Label>
+        <Input
+          id="email"
+          value={profile.email}
+          disabled
+          className="h-12 bg-muted"
+        />
+        <p className="text-xs text-muted-foreground">Email cannot be changed</p>
+      </div>
+
+      {/* Actions */}
+      <div className="flex gap-3 pt-4">
+        <Button
+          variant="outline"
+          onClick={onCancel}
+          className="flex-1 h-12"
+          disabled={isSaving}
+        >
+          Cancel
+        </Button>
+        <Button
+          onClick={handleSave}
+          className="flex-1 h-12 bg-emerald-500 hover:bg-emerald-600"
+          disabled={isSaving || !name.trim()}
+        >
+          {isSaving ? (
+            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+          ) : (
+            <Save className="w-4 h-4 mr-2" />
+          )}
+          Save Changes
+        </Button>
+      </div>
+    </div>
   );
 }
 
@@ -1433,6 +1635,42 @@ export function ProfilePage() {
               Export as CSV
             </Button>
           </div>
+          <div className="h-[env(safe-area-inset-bottom,0px)]" />
+        </SheetContent>
+      </Sheet>
+
+      {/* Edit Profile Sheet */}
+      <Sheet open={editProfileOpen} onOpenChange={setEditProfileOpen}>
+        <SheetContent side="bottom" className="rounded-t-3xl px-0 max-h-[90vh] overflow-y-auto">
+          <div className="h-1 w-12 bg-muted rounded-full mx-auto mt-2 mb-4" />
+          <SheetHeader className="px-6 pb-4">
+            <SheetTitle className="flex items-center gap-2">
+              <Edit3 className="w-5 h-5 text-emerald-500" />
+              Edit Profile
+            </SheetTitle>
+            <SheetDescription>
+              Update your profile information
+            </SheetDescription>
+          </SheetHeader>
+          <EditProfileForm 
+            profile={data.profile} 
+            onSave={async (updates) => {
+              try {
+                const response = await fetch('/api/profile', {
+                  method: 'PATCH',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify(updates),
+                });
+                if (response.ok) {
+                  refetch();
+                  setEditProfileOpen(false);
+                }
+              } catch (error) {
+                console.error('Failed to update profile:', error);
+              }
+            }}
+            onCancel={() => setEditProfileOpen(false)}
+          />
           <div className="h-[env(safe-area-inset-bottom,0px)]" />
         </SheetContent>
       </Sheet>

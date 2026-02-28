@@ -242,9 +242,17 @@ export async function GET() {
       id: photo.id,
       date: photo.capturedAt,
       imageUrl: photo.imageUrl,
-      weight: photo.weightEstimate,
+      weight: null, // Weight is tracked separately in measurements
       notes: photo.notes,
       isHighlight: false,
+      // Body composition data for this specific photo
+      bodyFat: photo.bodyFatEstimate ? {
+        min: Math.max(0, photo.bodyFatEstimate - 2),
+        max: photo.bodyFatEstimate + 2,
+        confidence: photo.analysisConfidence || 75,
+      } : null,
+      muscleMass: photo.muscleMassEstimate,
+      changeZones: photo.changeZones ? JSON.parse(photo.changeZones) : null,
     }));
 
     const badges = user.badges.map(badge => ({
