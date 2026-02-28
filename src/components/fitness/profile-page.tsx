@@ -3,6 +3,7 @@
 import * as React from "react";
 import { useState, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { toast } from "sonner";
 import {
   User,
   Crown,
@@ -411,7 +412,7 @@ function EvolutionMetricsStrip({
   ];
 
   return (
-    <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide -mx-4 px-4">
+    <div className="flex gap-3">
       {metrics.map((metric, index) => {
         const Icon = metric.icon;
         return (
@@ -421,7 +422,7 @@ function EvolutionMetricsStrip({
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.05 }}
             onClick={() => onMetricTap(metric.id)}
-            className="flex-shrink-0 w-[72px] p-3 rounded-xl bg-card/80 backdrop-blur-sm border border-border/50 hover:border-emerald-500/30 transition-all active:scale-95 shadow-sm"
+            className="flex-1 p-3 rounded-xl bg-card/80 backdrop-blur-sm border border-border/50 hover:border-emerald-500/30 transition-all active:scale-95 shadow-sm"
           >
             <Icon className="w-4 h-4 text-muted-foreground mx-auto mb-1.5" />
             <div className="text-center">
@@ -943,9 +944,11 @@ function AchievementBadges({
 function MicroExperimentsCarousel({
   experiments,
   onStartExperiment,
+  startingExperimentId,
 }: {
   experiments: ProfileData["experiments"];
   onStartExperiment: (experiment: ProfileData["experiments"][0]) => void;
+  startingExperimentId: string | null;
 }) {
   const getCategoryIcon = (category: ProfileData["experiments"][0]["category"]) => {
     switch (category) {
@@ -963,6 +966,9 @@ function MicroExperimentsCarousel({
     }
   };
 
+  // Check if there's an active experiment
+  const activeExperiment = experiments.find(exp => exp.status === 'active');
+
   return (
     <Card>
       <CardHeader className="pb-2 pt-4 px-4">
@@ -971,49 +977,119 @@ function MicroExperimentsCarousel({
           Micro-Experiments
         </CardTitle>
         <CardDescription>
-          Personalized actions based on your trends
+          {activeExperiment 
+            ? `Active: ${activeExperiment.title}` 
+            : "Personalized actions based on your trends"}
         </CardDescription>
       </CardHeader>
       <CardContent className="px-4 pb-4">
+        {/* Show active experiment status if exists */}
+        {activeExperiment && (
+          <div className="mb-4 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center">
+                <Check className="w-3 h-3 text-white" />
+              </div>
+              <span className="text-sm font-medium text-emerald-600">Active Experiment</span>
+            </div>
+            <p className="text-sm font-medium">{activeExperiment.title}</p>
+            <p className="text-xs text-muted-foreground mt-1">{activeExperiment.description}</p>
+            {activeExperiment.adherence > 0 && (
+              <div className="mt-2">
+                <div className="flex items-center justify-between text-xs mb-1">
+                  <span className="text-muted-foreground">Adherence</span>
+                  <span className="font-medium">{activeExperiment.adherence}%</span>
+                </div>
+                <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-emerald-500 rounded-full transition-all"
+                    style={{ width: `${activeExperiment.adherence}%` }}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+        
         <ScrollArea className="w-full">
           <div className="flex gap-3 pb-2">
-            {experiments.map((exp) => (
-              <motion.div
-                key={exp.id}
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                className="flex-shrink-0 w-56 p-4 rounded-2xl bg-gradient-to-br from-emerald-500/10 to-teal-500/10 border border-emerald-500/20"
-              >
-                <div className="flex items-center gap-2 mb-2">
-                  <div className={cn(
-                    "w-8 h-8 rounded-lg flex items-center justify-center",
-                    getCategoryColor(exp.category)
-                  )}>
-                    {getCategoryIcon(exp.category)}
+            {experiments.filter(exp => exp.status !== 'active').map((exp) => {
+              const isStarting = startingExperimentId === exp.id;
+              const isDisabled = !!activeExperiment || isStarting;
+              
+              return (
+                <motion.div
+                  key={exp.id}
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  className={cn(
+                    "flex-shrink-0 w-56 p-4 rounded-2xl border",
+                    exp.status === 'completed' 
+                      ? "bg-muted/30 border-border/50 opacity-60"
+                      : "bg-gradient-to-br from-emerald-500/10 to-teal-500/10 border-emerald-500/20"
+                  )}
+                >
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className={cn(
+                      "w-8 h-8 rounded-lg flex items-center justify-center",
+                      getCategoryColor(exp.category)
+                    )}>
+                      {getCategoryIcon(exp.category)}
+                    </div>
+                    <Badge variant="outline" className="text-[10px]">
+                      {exp.duration} days
+                    </Badge>
+                    {exp.status === 'completed' && (
+                      <Badge className="bg-emerald-500/20 text-emerald-600 text-[10px]">
+                        Done
+                      </Badge>
+                    )}
                   </div>
-                  <Badge variant="outline" className="text-[10px]">
-                    {exp.duration} days
-                  </Badge>
-                </div>
 
-                <h4 className="text-sm font-medium">{exp.title}</h4>
-                <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{exp.description}</p>
+                  <h4 className="text-sm font-medium">{exp.title}</h4>
+                  <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{exp.description}</p>
 
-                <div className="mt-3 pt-3 border-t border-emerald-500/20">
-                  <p className="text-[10px] text-muted-foreground mb-2">
-                    Expected: {exp.expectedOutcome}
-                  </p>
-                  <Button
-                    size="sm"
-                    onClick={() => onStartExperiment(exp)}
-                    className="w-full h-8 text-xs bg-emerald-500 hover:bg-emerald-600"
-                  >
-                    <Play className="w-3 h-3 mr-1" />
-                    Start Experiment
-                  </Button>
-                </div>
-              </motion.div>
-            ))}
+                  <div className="mt-3 pt-3 border-t border-emerald-500/20">
+                    <p className="text-[10px] text-muted-foreground mb-2">
+                      Expected: {exp.expectedOutcome}
+                    </p>
+                    <Button
+                      size="sm"
+                      onClick={() => onStartExperiment(exp)}
+                      disabled={isDisabled}
+                      className={cn(
+                        "w-full h-8 text-xs",
+                        exp.status === 'completed' 
+                          ? "bg-muted text-muted-foreground"
+                          : "bg-emerald-500 hover:bg-emerald-600"
+                      )}
+                    >
+                      {isStarting ? (
+                        <>
+                          <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                          Starting...
+                        </>
+                      ) : exp.status === 'completed' ? (
+                        <>
+                          <Check className="w-3 h-3 mr-1" />
+                          Completed
+                        </>
+                      ) : activeExperiment ? (
+                        <>
+                          <Lock className="w-3 h-3 mr-1" />
+                          Experiment Active
+                        </>
+                      ) : (
+                        <>
+                          <Play className="w-3 h-3 mr-1" />
+                          Start Experiment
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </motion.div>
+              );
+            })}
           </div>
         </ScrollArea>
       </CardContent>
@@ -1441,10 +1517,48 @@ export function ProfilePage() {
     console.log("Milestone tapped:", milestone.title);
   }, []);
 
-  const handleStartExperiment = useCallback((experiment: ProfileData["experiments"][0]) => {
-    console.log("Starting experiment:", experiment.title);
-    // TODO: Implement experiment start logic
-  }, []);
+  // Track experiment being started
+  const [startingExperimentId, setStartingExperimentId] = useState<string | null>(null);
+
+  const handleStartExperiment = useCallback(async (experiment: ProfileData["experiments"][0]) => {
+    // Prevent double-clicks
+    if (startingExperimentId) return;
+    
+    setStartingExperimentId(experiment.id);
+    
+    try {
+      const response = await fetch('/api/experiments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(experiment),
+      });
+      
+      const result = await response.json();
+      
+      if (!response.ok) {
+        if (result.existingExperiment) {
+          toast.error('Active experiment exists', {
+            description: `You already have "${result.existingExperiment.title}" in progress.`,
+          });
+        } else {
+          toast.error(result.error || 'Failed to start experiment');
+        }
+        return;
+      }
+      
+      toast.success('Experiment started!', {
+        description: result.message,
+      });
+      
+      // Refetch profile to update experiment list
+      refetch();
+    } catch (error) {
+      console.error('Error starting experiment:', error);
+      toast.error('Failed to start experiment. Please try again.');
+    } finally {
+      setStartingExperimentId(null);
+    }
+  }, [startingExperimentId, refetch]);
 
   // Handle loading and error states
   if (isLoading) {
@@ -1524,6 +1638,7 @@ export function ProfilePage() {
       <MicroExperimentsCarousel
         experiments={data.experiments}
         onStartExperiment={handleStartExperiment}
+        startingExperimentId={startingExperimentId}
       />
 
       {/* Identity Snapshot */}
