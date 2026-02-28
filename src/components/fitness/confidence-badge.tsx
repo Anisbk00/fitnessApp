@@ -14,7 +14,7 @@ export interface ConfidenceBadgeProps {
   /** Whether to show the text label */
   showLabel?: boolean;
   /** Size variant */
-  size?: "sm" | "md" | "lg";
+  size?: "xs" | "sm" | "md" | "lg";
   /** Additional CSS classes */
   className?: string;
 }
@@ -58,6 +58,10 @@ const getConfidenceConfig = (confidence: number): ConfidenceConfig => {
 };
 
 const sizeConfig = {
+  xs: {
+    container: "gap-1 px-1.5 py-0.5 text-[10px]",
+    dot: "size-1.5",
+  },
   sm: {
     container: "gap-1.5 px-2 py-0.5 text-xs",
     dot: "size-2",

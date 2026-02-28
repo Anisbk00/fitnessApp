@@ -1,112 +1,92 @@
-import { NextRequest, NextResponse } from "next/server";
-import ZAI from "z-ai-web-dev-sdk";
+import { NextRequest, NextResponse } from 'next/server';
+import { db } from '@/lib/db';
 
-// Insights Generation API
-export async function POST(request: NextRequest) {
+// GET /api/insights - Get user insights
+export async function GET(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { 
-      userData,
-      timeframe = "14 days"
-    } = body;
-
-    const zai = await ZAI.create();
-
-    const systemPrompt = `You are an expert fitness data analyst. Analyze the provided user data and generate actionable insights.
-
-RULES:
-1. Every insight must include a confidence score (0-100)
-2. Every insight must have a one-line rationale
-3. Actions should be phrased as experiments: "Try: [action] for [timeframe]"
-4. Be factual and non-judgmental
-5. If data is insufficient, state that clearly
-
-OUTPUT FORMAT (JSON array):
-[
-  {
-    "id": "unique-id",
-    "title": "Insight title",
-    "description": "Detailed explanation",
-    "actionSuggestion": "Try: ...",
-    "confidence": 85,
-    "category": "trend" | "anomaly" | "correlation" | "prediction",
-    "dataSources": ["source1", "source2"],
-    "priority": 0-100,
-    "rationale": "One-line explanation"
-  }
-]
-
-Categories:
-- trend: Ongoing patterns in the data
-- anomaly: Unusual observations that stand out
-- correlation: Relationships between different metrics
-- prediction: Future projections based on current data`;
-
-    const userPrompt = `Analyze the following fitness data for the past ${timeframe}:
-
-${JSON.stringify(userData, null, 2)}
-
-Generate 3-5 actionable insights. Focus on the most important findings that could help the user improve their fitness journey.`;
-
-    const response = await zai.chat.completions.create({
-      model: "default",
-      messages: [
-        { role: "assistant", content: systemPrompt },
-        { role: "user", content: userPrompt }
-      ],
-      thinking: { type: "disabled" }
-    });
-
-    const content = response.choices[0]?.message?.content;
-
-    // Parse insights
-    let insights: Array<Record<string, unknown>>;
-    try {
-      const jsonMatch = content?.match(/\[[\s\S]*\]/);
-      if (jsonMatch) {
-        insights = JSON.parse(jsonMatch[0]);
-      } else {
-        insights = [];
-      }
-    } catch {
-      insights = [];
+    const { searchParams } = new URL(request.url);
+    const limit = parseInt(searchParams.get('limit') || '5');
+    
+    const user = await db.user.findFirst();
+    if (!user) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    // Add provenance to each insight
-    const insightsWithProvenance = insights.map((insight) => ({
-      ...insight,
-      generatedAt: new Date().toISOString(),
-      provenance: {
-        source: "model",
-        modelName: "Insight Engine v2",
-        dataPointsUsed: insight.dataSources || [],
-        method: "Pattern analysis and correlation detection"
-      }
-    }));
-
-    return NextResponse.json({
-      success: true,
-      insights: insightsWithProvenance,
-      generatedAt: new Date().toISOString(),
-      timeframe
+    // Get active, non-dismissed insights
+    const insights = await db.insight.findMany({
+      where: {
+        userId: user.id,
+        isActive: true,
+        dismissed: false,
+      },
+      orderBy: [
+        { priority: 'desc' },
+        { generatedAt: 'desc' },
+      ],
+      take: limit,
     });
 
+    // If no insights exist, return empty array
+    // The frontend can handle the empty state
+    
+    return NextResponse.json({ insights });
   } catch (error) {
-    console.error("Insights generation error:", error);
-    return NextResponse.json(
-      { 
-        success: false, 
-        error: error instanceof Error ? error.message : "Insights generation failed" 
-      },
-      { status: 500 }
-    );
+    console.error('Error fetching insights:', error);
+    return NextResponse.json({ error: 'Failed to fetch insights' }, { status: 500 });
   }
 }
 
-export async function GET() {
-  return NextResponse.json({
-    endpoint: "Insights Generation API",
-    categories: ["trend", "anomaly", "correlation", "prediction"],
-    usage: "POST with { userData: object, timeframe?: string }"
-  });
+// POST /api/insights - Create an insight (usually done by AI)
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json();
+    
+    const user = await db.user.findFirst();
+    if (!user) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+
+    const insight = await db.insight.create({
+      data: {
+        userId: user.id,
+        insightType: body.insightType || 'trend',
+        category: body.category || 'nutrition',
+        title: body.title,
+        description: body.description,
+        actionSuggestion: body.actionSuggestion,
+        confidence: body.confidence || 0.5,
+        dataSources: body.dataSources,
+        priority: body.priority || 0,
+      },
+    });
+
+    return NextResponse.json({ insight });
+  } catch (error) {
+    console.error('Error creating insight:', error);
+    return NextResponse.json({ error: 'Failed to create insight' }, { status: 500 });
+  }
+}
+
+// PATCH /api/insights - Dismiss or act on an insight
+export async function PATCH(request: NextRequest) {
+  try {
+    const body = await request.json();
+    
+    if (!body.insightId) {
+      return NextResponse.json({ error: 'Insight ID required' }, { status: 400 });
+    }
+
+    const insight = await db.insight.update({
+      where: { id: body.insightId },
+      data: {
+        dismissed: body.dismissed,
+        actedUpon: body.actedUpon,
+      },
+    });
+
+    return NextResponse.json({ insight });
+  } catch (error) {
+    console.error('Error updating insight:', error);
+    return NextResponse.json({ error: 'Failed to update insight' }, { status: 500 });
+  }
 }
