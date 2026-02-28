@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { motion, AnimatePresence, useMotionValue, useSpring, useTransform } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Home,
   Utensils,
@@ -109,7 +109,7 @@ export default function ProgressCompanionHome() {
     return 'stable';
   }, [latestWeight, measurements]);
   
-  // Daily Action Modules
+  // Daily Action Modules - Only show real data, 0 if no data
   const actionModules = [
     {
       id: 'nutrition',
@@ -131,7 +131,7 @@ export default function ProgressCompanionHome() {
       id: 'hydration',
       icon: Droplets,
       label: 'Hydration',
-      value: 65,
+      value: 0, // No hydration tracking yet
       color: 'from-cyan-400 to-blue-500',
       bgColor: 'bg-cyan-50 dark:bg-cyan-950/30',
     },
@@ -139,7 +139,7 @@ export default function ProgressCompanionHome() {
       id: 'activity',
       icon: Footprints,
       label: 'Steps',
-      value: 72,
+      value: 0, // No step tracking yet
       color: 'from-emerald-400 to-teal-500',
       bgColor: 'bg-emerald-50 dark:bg-emerald-950/30',
     },
@@ -147,7 +147,7 @@ export default function ProgressCompanionHome() {
       id: 'recovery',
       icon: Moon,
       label: 'Recovery',
-      value: 85,
+      value: 0, // No recovery tracking yet
       color: 'from-violet-400 to-purple-500',
       bgColor: 'bg-violet-50 dark:bg-violet-950/30',
     },
@@ -155,7 +155,7 @@ export default function ProgressCompanionHome() {
       id: 'workout',
       icon: Dumbbell,
       label: 'Workout',
-      value: 0,
+      value: 0, // No workout logged today
       color: 'from-slate-400 to-gray-500',
       bgColor: 'bg-slate-50 dark:bg-slate-950/30',
     },
@@ -476,12 +476,27 @@ function BodyIntelligenceCard({
   trend: 'up' | 'down' | 'stable';
   isLoading: boolean;
 }) {
-  const scoreAnimated = useSpring(0, { stiffness: 50, damping: 20 });
-  const displayScore = useTransform(scoreAnimated, (v) => Math.round(v));
+  const [animatedScore, setAnimatedScore] = useState(0);
   
+  // Animate score on mount or when bodyScore changes
   useEffect(() => {
-    scoreAnimated.set(bodyScore);
-  }, [bodyScore, scoreAnimated]);
+    const duration = 1000;
+    const steps = 60;
+    const interval = duration / steps;
+    
+    let step = 0;
+    const timer = setInterval(() => {
+      step++;
+      const progress = step / steps;
+      const eased = 1 - Math.pow(1 - progress, 3);
+      
+      setAnimatedScore(Math.round(bodyScore * eased));
+      
+      if (step >= steps) clearInterval(timer);
+    }, interval);
+    
+    return () => clearInterval(timer);
+  }, [bodyScore]);
   
   // Trend message
   const trendMessage = useMemo(() => {
@@ -514,7 +529,7 @@ function BodyIntelligenceCard({
               <p className="text-xs text-muted-foreground uppercase tracking-widest font-medium">Body Intelligence</p>
               <div className="flex items-baseline gap-1 mt-1">
                 <motion.span className="text-4xl font-bold tracking-tight">
-                  {displayScore}
+                  {animatedScore}
                 </motion.span>
                 <span className="text-muted-foreground text-sm">/ 100</span>
               </div>

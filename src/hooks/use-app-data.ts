@@ -279,6 +279,81 @@ export function useInsights(limit: number = 5) {
   return { insights, isLoading, dismissInsight, refetch: fetchInsights };
 }
 
+// Analytics Data Hook
+export interface AnalyticsData {
+  graphData: Array<{ date: string; value: number }>;
+  trend: 'up' | 'down' | 'stable';
+  percentChange: number;
+  bodyComposition: {
+    currentWeight: number | null;
+    previousWeight: number | null;
+    currentBodyFat: number | null;
+    previousBodyFat: number | null;
+    currentLeanMass: number | null;
+    previousLeanMass: number | null;
+    weightChange: number | null;
+    bodyFatChange: number | null;
+    leanMassChange: number | null;
+  };
+  nutrition: {
+    avgCalories: number;
+    avgProtein: number;
+    avgCarbs: number;
+    avgFat: number;
+    caloricBalanceScore: number;
+    proteinScore: number;
+    carbTimingScore: number;
+    fatQualityScore: number;
+    metabolicStability: number;
+  };
+  training: {
+    totalWorkouts: number;
+    totalVolume: number;
+    totalDuration: number;
+    avgWorkoutDuration: number;
+    recoveryScore: number;
+    volumeTrend: 'up' | 'down' | 'stable';
+    volumeScore: number;
+    recoveryScoreRadar: number;
+    sleepScore: number;
+    calorieScore: number;
+    stressScore: number;
+  };
+  evolution: Array<{
+    month: string;
+    weight: number | null;
+    bodyFat: number | null;
+    leanMass: number | null;
+  }>;
+}
+
+export function useAnalytics(metric: string = 'weight', range: string = '30d') {
+  const [data, setData] = useState<AnalyticsData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchAnalytics = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      const response = await fetch(`/api/analytics?metric=${metric}&range=${range}`);
+      if (!response.ok) throw new Error('Failed to fetch analytics');
+      const result = await response.json();
+      setData(result);
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unknown error');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [metric, range]);
+
+  useEffect(() => {
+    fetchAnalytics();
+  }, [fetchAnalytics]);
+
+  return { data, isLoading, error, refetch: fetchAnalytics };
+}
+
 // Helper: Generate weekly data
 function generateWeeklyData() {
   const data = [];

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   TrendingUp,
@@ -10,24 +10,17 @@ import {
   Scale,
   Dumbbell,
   Moon,
-  Sun,
   Zap,
   Target,
   Flame,
-  Droplets,
   Heart,
-  Brain,
-  ChevronLeft,
-  ChevronRight,
   Sparkles,
-  AlertCircle,
-  CheckCircle2,
-  Info,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAnalytics, type AnalyticsData } from "@/hooks/use-app-data";
 
 // ═══════════════════════════════════════════════════════════════
-// ANALYTICS PAGE - Performance Intelligence System
+// ANALYTICS PAGE - Performance Intelligence System (Real Data)
 // ═══════════════════════════════════════════════════════════════
 
 type MetricMode = 'weight' | 'bodyFat' | 'leanMass' | 'calories' | 'training' | 'recovery';
@@ -39,22 +32,60 @@ export function AnalyticsPage() {
   const [selectedPoint, setSelectedPoint] = useState<number | null>(null);
   const [evolutionSlider, setEvolutionSlider] = useState(0);
   
-  // Simulated data - In production, fetch from API
-  const data = useMemo(() => generateMockData(metricMode, timeRange), [metricMode, timeRange]);
+  // Fetch real analytics data
+  const { data, isLoading } = useAnalytics(metricMode, timeRange);
   
-  // Compute trend direction
-  const trend = useMemo(() => {
-    if (data.length < 2) return 'stable';
-    const recent = data.slice(-7).reduce((a, b) => a + b.value, 0) / 7;
-    const previous = data.slice(0, 7).reduce((a, b) => a + b.value, 0) / 7;
-    const change = ((recent - previous) / previous) * 100;
-    if (change > 1) return 'up';
-    if (change < -1) return 'down';
-    return 'stable';
-  }, [data]);
+  // Default data structure for loading/empty states
+  const defaultData: AnalyticsData = {
+    graphData: [],
+    trend: 'stable',
+    percentChange: 0,
+    bodyComposition: {
+      currentWeight: null,
+      previousWeight: null,
+      currentBodyFat: null,
+      previousBodyFat: null,
+      currentLeanMass: null,
+      previousLeanMass: null,
+      weightChange: null,
+      bodyFatChange: null,
+      leanMassChange: null,
+    },
+    nutrition: {
+      avgCalories: 0,
+      avgProtein: 0,
+      avgCarbs: 0,
+      avgFat: 0,
+      caloricBalanceScore: 0,
+      proteinScore: 0,
+      carbTimingScore: 0,
+      fatQualityScore: 0,
+      metabolicStability: 0,
+    },
+    training: {
+      totalWorkouts: 0,
+      totalVolume: 0,
+      totalDuration: 0,
+      avgWorkoutDuration: 0,
+      recoveryScore: 0,
+      volumeTrend: 'stable',
+      volumeScore: 0,
+      recoveryScoreRadar: 0,
+      sleepScore: 0,
+      calorieScore: 0,
+      stressScore: 0,
+    },
+    evolution: [],
+  };
+  
+  const analytics = data || defaultData;
+  const trend = analytics.trend;
   
   // Dynamic insight
   const insight = useMemo(() => {
+    if (isLoading) return "Loading your data...";
+    if (!data) return "Add measurements to see insights";
+    
     switch (metricMode) {
       case 'weight':
         return trend === 'up' ? "Weight trending upward — consider caloric adjustment" 
@@ -69,18 +100,21 @@ export function AnalyticsPage() {
              : trend === 'down' ? "Lean mass declining — increase protein" 
              : "Muscle maintenance mode active.";
       case 'calories':
-        return "Caloric intake aligning with your goals.";
+        return `Average intake: ${analytics.nutrition.avgCalories} kcal/day`;
       case 'training':
-        return "Training load optimal for current recovery capacity.";
+        return `${analytics.training.totalWorkouts} workouts logged in this period.`;
       case 'recovery':
-        return "Recovery outperforming training demands.";
+        return "Track your recovery with consistent measurements.";
       default:
         return "Your body is adapting.";
     }
-  }, [metricMode, trend]);
+  }, [metricMode, trend, analytics, isLoading, data]);
   
   // Headline
   const headline = useMemo(() => {
+    if (isLoading) return "Loading...";
+    if (!data) return "No Data Yet";
+    
     switch (metricMode) {
       case 'weight':
         return trend === 'down' ? "You are trending leaner" 
@@ -94,10 +128,16 @@ export function AnalyticsPage() {
         return trend === 'up' ? "Muscle gains detected" 
              : trend === 'down' ? "Lean mass declining" 
              : "Muscle maintenance active";
+      case 'calories':
+        return "Nutrition Analysis";
+      case 'training':
+        return "Training Intelligence";
+      case 'recovery':
+        return "Recovery Status";
       default:
         return "Performance Intelligence";
     }
-  }, [metricMode, trend]);
+  }, [metricMode, trend, isLoading, data]);
 
   return (
     <div className="space-y-6 pb-8">
@@ -117,28 +157,41 @@ export function AnalyticsPage() {
       
       {/* ═══ CORE INTELLIGENCE GRAPH ═══ */}
       <CoreIntelligenceGraph
-        data={data}
+        data={analytics.graphData}
         metricMode={metricMode}
         timeRange={timeRange}
         onTimeRangeChange={setTimeRange}
         selectedPoint={selectedPoint}
         onPointSelect={setSelectedPoint}
         trend={trend}
+        percentChange={analytics.percentChange}
+        isLoading={isLoading}
       />
       
       {/* ═══ BODY COMPOSITION INTELLIGENCE ═══ */}
-      <BodyCompositionSection />
+      <BodyCompositionSection 
+        data={analytics.bodyComposition}
+        isLoading={isLoading}
+      />
       
       {/* ═══ METABOLIC & NUTRITION ANALYTICS ═══ */}
-      <MetabolicNutritionSection />
+      <MetabolicNutritionSection 
+        data={analytics.nutrition}
+        isLoading={isLoading}
+      />
       
       {/* ═══ TRAINING INTELLIGENCE ═══ */}
-      <TrainingIntelligenceSection />
+      <TrainingIntelligenceSection 
+        data={analytics.training}
+        isLoading={isLoading}
+      />
       
       {/* ═══ BODY EVOLUTION MAP ═══ */}
       <BodyEvolutionMap
         value={evolutionSlider}
         onChange={setEvolutionSlider}
+        evolution={analytics.evolution}
+        isLoading={isLoading}
       />
     </div>
   );
@@ -266,37 +319,52 @@ function CoreIntelligenceGraph({
   selectedPoint,
   onPointSelect,
   trend,
+  percentChange,
+  isLoading,
 }: {
-  data: Array<{ date: Date; value: number }>;
+  data: Array<{ date: string; value: number }>;
   metricMode: MetricMode;
   timeRange: TimeRange;
   onTimeRangeChange: (range: TimeRange) => void;
   selectedPoint: number | null;
   onPointSelect: (index: number | null) => void;
   trend: 'up' | 'down' | 'stable';
+  percentChange: number;
+  isLoading: boolean;
 }) {
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   
+  // Convert data for graph
+  const graphData = useMemo(() => {
+    return data.map(d => ({
+      date: new Date(d.date),
+      value: d.value
+    }));
+  }, [data]);
+  
   // Calculate graph dimensions
-  const minValue = Math.min(...data.map(d => d.value));
-  const maxValue = Math.max(...data.map(d => d.value));
+  const values = graphData.map(d => d.value);
+  const minValue = values.length > 0 ? Math.min(...values) : 0;
+  const maxValue = values.length > 0 ? Math.max(...values) : 100;
   const range = maxValue - minValue || 1;
   const padding = range * 0.1;
   
   // Generate SVG path
   const pathD = useMemo(() => {
+    if (graphData.length === 0) return '';
     const width = 350;
     const height = 180;
-    const points = data.map((d, i) => {
-      const x = (i / (data.length - 1)) * width;
+    const points = graphData.map((d, i) => {
+      const x = (i / Math.max(graphData.length - 1, 1)) * width;
       const y = height - ((d.value - minValue + padding) / (range + padding * 2)) * height;
       return `${x},${y}`;
     });
     return `M ${points.join(' L ')}`;
-  }, [data, minValue, range, padding]);
+  }, [graphData, minValue, range, padding]);
   
   // Generate gradient fill path
   const fillD = useMemo(() => {
+    if (!pathD) return '';
     const width = 350;
     const height = 180;
     return `${pathD} L ${width},${height} L 0,${height} Z`;
@@ -313,6 +381,40 @@ function CoreIntelligenceGraph({
     }
   };
   
+  if (isLoading) {
+    return (
+      <div className="px-5">
+        <div className="rounded-3xl bg-card/60 backdrop-blur-xl border border-border/30 p-5">
+          <div className="h-48 flex items-center justify-center">
+            <motion.div
+              animate={{ opacity: [0.3, 0.6, 0.3] }}
+              transition={{ duration: 1.5, repeat: Infinity }}
+              className="text-muted-foreground"
+            >
+              Loading data...
+            </motion.div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  
+  if (graphData.length === 0) {
+    return (
+      <div className="px-5">
+        <div className="rounded-3xl bg-card/60 backdrop-blur-xl border border-border/30 p-5">
+          <div className="h-48 flex flex-col items-center justify-center gap-3">
+            <Activity className="w-12 h-12 text-muted-foreground/30" />
+            <div className="text-center">
+              <p className="text-muted-foreground">No {metricMode === 'bodyFat' ? 'body fat' : metricMode === 'leanMass' ? 'lean mass' : metricMode} data yet</p>
+              <p className="text-xs text-muted-foreground/60 mt-1">Add measurements to see your progress</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -332,18 +434,18 @@ function CoreIntelligenceGraph({
             <div className="flex items-center gap-2">
               <span className="text-xs text-muted-foreground">Range</span>
               <div className="flex bg-muted/50 rounded-xl p-0.5">
-                {(['7d', '30d', '90d'] as TimeRange[]).map((range) => (
+                {(['7d', '30d', '90d'] as TimeRange[]).map((r) => (
                   <button
-                    key={range}
-                    onClick={() => onTimeRangeChange(range)}
+                    key={r}
+                    onClick={() => onTimeRangeChange(r)}
                     className={cn(
                       "px-3 py-1.5 text-xs font-medium rounded-lg transition-all",
-                      timeRange === range
+                      timeRange === r
                         ? "bg-background text-foreground shadow-sm"
                         : "text-muted-foreground"
                     )}
                   >
-                    {range}
+                    {r}
                   </button>
                 ))}
               </div>
@@ -359,7 +461,7 @@ function CoreIntelligenceGraph({
               {trend === 'up' && <TrendingUp className="w-3 h-3" />}
               {trend === 'down' && <TrendingDown className="w-3 h-3" />}
               {trend === 'stable' && <Minus className="w-3 h-3" />}
-              {trend === 'up' ? '+' : trend === 'down' ? '-' : ''}{((Math.random() * 3 + 0.5)).toFixed(1)}%
+              {percentChange > 0 ? '+' : ''}{percentChange.toFixed(1)}%
             </div>
           </div>
           
@@ -419,8 +521,8 @@ function CoreIntelligenceGraph({
               />
               
               {/* Interactive points */}
-              {data.map((d, i) => {
-                const x = (i / (data.length - 1)) * 350;
+              {graphData.map((d, i) => {
+                const x = (i / Math.max(graphData.length - 1, 1)) * 350;
                 const y = 180 - ((d.value - minValue + padding) / (range + padding * 2)) * 180;
                 return (
                   <motion.circle
@@ -446,7 +548,7 @@ function CoreIntelligenceGraph({
             
             {/* Floating Info Card */}
             <AnimatePresence>
-              {(hoveredIndex !== null || selectedPoint !== null) && (
+              {(hoveredIndex !== null || selectedPoint !== null) && graphData.length > 0 && (
                 <motion.div
                   initial={{ opacity: 0, y: 10, scale: 0.95 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -455,12 +557,12 @@ function CoreIntelligenceGraph({
                 >
                   <div className="text-center">
                     <p className="text-2xl font-semibold">
-                      {data[hoveredIndex ?? selectedPoint ?? 0]?.value.toFixed(1)}
+                      {graphData[hoveredIndex ?? selectedPoint ?? 0]?.value.toFixed(1)}
                       <span className="text-sm text-muted-foreground ml-1">{getUnit()}</span>
                     </p>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      {data[hoveredIndex ?? selectedPoint ?? 0] && 
-                        new Date(data[hoveredIndex ?? selectedPoint ?? 0].date).toLocaleDateString('en-US', { 
+                      {graphData[hoveredIndex ?? selectedPoint ?? 0] && 
+                        new Date(graphData[hoveredIndex ?? selectedPoint ?? 0].date).toLocaleDateString('en-US', { 
                           month: 'short', 
                           day: 'numeric' 
                         })}
@@ -473,9 +575,9 @@ function CoreIntelligenceGraph({
           
           {/* X-axis labels */}
           <div className="flex justify-between mt-2 text-xs text-muted-foreground">
-            <span>{data[0] && new Date(data[0].date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
-            <span>{data[Math.floor(data.length / 2)] && new Date(data[Math.floor(data.length / 2)].date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
-            <span>{data[data.length - 1] && new Date(data[data.length - 1].date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+            <span>{graphData[0] && new Date(graphData[0].date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+            <span>{graphData[Math.floor(graphData.length / 2)] && new Date(graphData[Math.floor(graphData.length / 2)].date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+            <span>{graphData[graphData.length - 1] && new Date(graphData[graphData.length - 1].date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
           </div>
         </div>
       </div>
@@ -487,15 +589,22 @@ function CoreIntelligenceGraph({
 // BODY COMPOSITION INTELLIGENCE
 // ═══════════════════════════════════════════════════════════════
 
-function BodyCompositionSection() {
-  // Use regular state for display values (avoids MotionValue rendering issues)
-  const [bodyFat, setBodyFat] = useState(18);
-  const [leanMass, setLeanMass] = useState(62);
+function BodyCompositionSection({ 
+  data,
+  isLoading 
+}: { 
+  data: AnalyticsData['bodyComposition'];
+  isLoading: boolean;
+}) {
+  const [animatedBodyFat, setAnimatedBodyFat] = useState(0);
+  const [animatedLeanMass, setAnimatedLeanMass] = useState(0);
   
-  // Animate values on mount
+  // Animate values when data changes
   useEffect(() => {
-    const bodyFatTarget = 18;
-    const leanMassTarget = 62;
+    if (isLoading || !data.currentBodyFat) return;
+    
+    const bodyFatTarget = data.currentBodyFat;
+    const leanMassTarget = data.currentLeanMass || 0;
     const duration = 1000;
     const steps = 60;
     const interval = duration / steps;
@@ -504,17 +613,45 @@ function BodyCompositionSection() {
     const timer = setInterval(() => {
       step++;
       const progress = step / steps;
-      const eased = 1 - Math.pow(1 - progress, 3); // ease-out cubic
+      const eased = 1 - Math.pow(1 - progress, 3);
       
-      setBodyFat(Math.round(bodyFatTarget * eased));
-      setLeanMass(Math.round(leanMassTarget * eased));
+      setAnimatedBodyFat(Math.round(bodyFatTarget * eased));
+      setAnimatedLeanMass(Math.round(leanMassTarget * eased));
       
       if (step >= steps) clearInterval(timer);
     }, interval);
     
     return () => clearInterval(timer);
-  }, []);
+  }, [data.currentBodyFat, data.currentLeanMass, isLoading]);
+
+  if (isLoading) {
+    return (
+      <div className="px-5">
+        <h3 className="text-sm font-medium text-muted-foreground mb-3">Body Composition</h3>
+        <div className="grid grid-cols-2 gap-3">
+          {[1, 2].map((i) => (
+            <div key={i} className="p-4 rounded-2xl bg-card/60 animate-pulse h-36" />
+          ))}
+        </div>
+      </div>
+    );
+  }
   
+  const hasData = data.currentBodyFat !== null || data.currentLeanMass !== null;
+  
+  if (!hasData) {
+    return (
+      <div className="px-5">
+        <h3 className="text-sm font-medium text-muted-foreground mb-3">Body Composition</h3>
+        <div className="p-6 rounded-2xl bg-card/60 backdrop-blur-sm border border-border/30 text-center">
+          <Target className="w-10 h-10 text-muted-foreground/30 mx-auto mb-2" />
+          <p className="text-sm text-muted-foreground">No body composition data</p>
+          <p className="text-xs text-muted-foreground/60 mt-1">Log body fat and lean mass measurements</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -549,7 +686,7 @@ function BodyCompositionSection() {
                   strokeLinecap="round"
                   strokeDasharray={201}
                   initial={{ strokeDashoffset: 201 }}
-                  animate={{ strokeDashoffset: 201 - (201 * 18) / 100 }}
+                  animate={{ strokeDashoffset: 201 - (201 * Math.min(data.currentBodyFat || 0, 100)) / 100 }}
                   transition={{ duration: 1.5, ease: "easeOut" }}
                 />
                 <defs>
@@ -560,11 +697,18 @@ function BodyCompositionSection() {
                 </defs>
               </svg>
               <div className="absolute inset-0 flex items-center justify-center">
-                <span className="text-lg font-semibold">{bodyFat}%</span>
+                <span className="text-lg font-semibold">{animatedBodyFat}%</span>
               </div>
             </div>
             <p className="text-xs text-muted-foreground mt-2">Body Fat</p>
-            <p className="text-[10px] text-emerald-500 mt-0.5">-0.3% this month</p>
+            {data.bodyFatChange !== null && (
+              <p className={cn(
+                "text-[10px] mt-0.5",
+                data.bodyFatChange < 0 ? "text-emerald-500" : data.bodyFatChange > 0 ? "text-amber-500" : "text-muted-foreground"
+              )}>
+                {data.bodyFatChange > 0 ? '+' : ''}{data.bodyFatChange.toFixed(1)}% this month
+              </p>
+            )}
           </div>
         </div>
         
@@ -575,31 +719,42 @@ function BodyCompositionSection() {
               <motion.div
                 className="w-full rounded-t-lg bg-gradient-to-t from-emerald-500 to-teal-400"
                 initial={{ height: 0 }}
-                animate={{ height: '75%' }}
+                animate={{ height: data.currentLeanMass ? `${Math.min(data.currentLeanMass / 80 * 100, 100)}%` : '50%' }}
                 transition={{ duration: 1, ease: "easeOut" }}
               />
               <div className="absolute -top-6 left-1/2 -translate-x-1/2">
-                <span className="text-lg font-semibold">{leanMass}kg</span>
+                <span className="text-lg font-semibold">{animatedLeanMass}kg</span>
               </div>
             </div>
             <p className="text-xs text-muted-foreground mt-2">Lean Mass</p>
-            <p className="text-[10px] text-emerald-500 mt-0.5">+0.5kg this month</p>
+            {data.leanMassChange !== null && (
+              <p className={cn(
+                "text-[10px] mt-0.5",
+                data.leanMassChange > 0 ? "text-emerald-500" : data.leanMassChange < 0 ? "text-amber-500" : "text-muted-foreground"
+              )}>
+                {data.leanMassChange > 0 ? '+' : ''}{data.leanMassChange.toFixed(1)}kg this month
+              </p>
+            )}
           </div>
         </div>
       </div>
       
       {/* AI Insight */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.5 }}
-        className="mt-3 flex items-start gap-2 p-3 rounded-xl bg-emerald-500/5 border border-emerald-500/10"
-      >
-        <Sparkles className="w-4 h-4 text-emerald-500 mt-0.5 flex-shrink-0" />
-        <p className="text-xs text-muted-foreground leading-relaxed">
-          Muscle retention is strong during deficit. Your protein intake is supporting lean mass preservation.
-        </p>
-      </motion.div>
+      {data.currentBodyFat && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.5 }}
+          className="mt-3 flex items-start gap-2 p-3 rounded-xl bg-emerald-500/5 border border-emerald-500/10"
+        >
+          <Sparkles className="w-4 h-4 text-emerald-500 mt-0.5 flex-shrink-0" />
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            {data.bodyFatChange !== null && data.bodyFatChange < 0
+              ? "Body composition is improving. Your current approach is working well."
+              : "Focus on consistent nutrition and training to optimize body composition."}
+          </p>
+        </motion.div>
+      )}
     </motion.div>
   );
 }
@@ -608,14 +763,48 @@ function BodyCompositionSection() {
 // METABOLIC & NUTRITION ANALYTICS
 // ═══════════════════════════════════════════════════════════════
 
-function MetabolicNutritionSection() {
+function MetabolicNutritionSection({ 
+  data,
+  isLoading 
+}: { 
+  data: AnalyticsData['nutrition'];
+  isLoading: boolean;
+}) {
   const metrics = [
-    { label: 'Caloric Balance', value: 85, color: 'from-amber-400 to-orange-500' },
-    { label: 'Protein Score', value: 92, color: 'from-rose-400 to-pink-500' },
-    { label: 'Carb Timing', value: 78, color: 'from-blue-400 to-cyan-500' },
-    { label: 'Fat Quality', value: 88, color: 'from-purple-400 to-violet-500' },
+    { label: 'Caloric Balance', value: data.caloricBalanceScore, color: 'from-amber-400 to-orange-500' },
+    { label: 'Protein Score', value: data.proteinScore, color: 'from-rose-400 to-pink-500' },
+    { label: 'Carb Timing', value: data.carbTimingScore, color: 'from-blue-400 to-cyan-500' },
+    { label: 'Fat Quality', value: data.fatQualityScore, color: 'from-purple-400 to-violet-500' },
   ];
   
+  if (isLoading) {
+    return (
+      <div className="px-5">
+        <h3 className="text-sm font-medium text-muted-foreground mb-3">Fuel & Output</h3>
+        <div className="space-y-3">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="h-10 bg-card/60 animate-pulse rounded-xl" />
+          ))}
+        </div>
+      </div>
+    );
+  }
+  
+  const hasData = data.avgCalories > 0;
+
+  if (!hasData) {
+    return (
+      <div className="px-5">
+        <h3 className="text-sm font-medium text-muted-foreground mb-3">Fuel & Output</h3>
+        <div className="p-6 rounded-2xl bg-card/60 backdrop-blur-sm border border-border/30 text-center">
+          <Flame className="w-10 h-10 text-muted-foreground/30 mx-auto mb-2" />
+          <p className="text-sm text-muted-foreground">No nutrition data</p>
+          <p className="text-xs text-muted-foreground/60 mt-1">Log meals to see your nutrition analytics</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -660,14 +849,14 @@ function MetabolicNutritionSection() {
         <div className="flex items-center justify-between">
           <div>
             <p className="text-xs text-muted-foreground uppercase tracking-wider">Metabolic Stability</p>
-            <p className="text-2xl font-semibold mt-1">87<span className="text-sm text-muted-foreground">/100</span></p>
+            <p className="text-2xl font-semibold mt-1">{data.metabolicStability}<span className="text-sm text-muted-foreground">/100</span></p>
           </div>
           <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center">
             <Zap className="w-6 h-6 text-white" />
           </div>
         </div>
         <p className="text-xs text-muted-foreground mt-2">
-          Your metabolism is running efficiently. Caloric intake is well-balanced with expenditure.
+          Avg {data.avgCalories} kcal • {data.avgProtein}g protein per day
         </p>
       </motion.div>
     </motion.div>
@@ -678,9 +867,26 @@ function MetabolicNutritionSection() {
 // TRAINING INTELLIGENCE
 // ═══════════════════════════════════════════════════════════════
 
-function TrainingIntelligenceSection() {
-  const [radarImbalance, setRadarImbalance] = useState(0.15);
-  
+function TrainingIntelligenceSection({ 
+  data,
+  isLoading 
+}: { 
+  data: AnalyticsData['training'];
+  isLoading: boolean;
+}) {
+  if (isLoading) {
+    return (
+      <div className="px-5">
+        <h3 className="text-sm font-medium text-muted-foreground mb-3">Performance Adaptation</h3>
+        <div className="grid grid-cols-2 gap-3">
+          {[1, 2].map((i) => (
+            <div key={i} className="p-4 rounded-2xl bg-card/60 animate-pulse h-24" />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -697,8 +903,10 @@ function TrainingIntelligenceSection() {
             <Activity className="w-4 h-4 text-emerald-500" />
             <span className="text-xs text-muted-foreground">Volume</span>
           </div>
-          <p className="text-2xl font-semibold">12,450<span className="text-sm text-muted-foreground ml-1">kg</span></p>
-          <p className="text-[10px] text-emerald-500 mt-1">+8% from last week</p>
+          <p className="text-2xl font-semibold">{data.totalVolume.toLocaleString()}<span className="text-sm text-muted-foreground ml-1">kg</span></p>
+          {data.totalWorkouts > 0 && (
+            <p className="text-[10px] text-emerald-500 mt-1">{data.totalWorkouts} workouts</p>
+          )}
         </div>
         
         {/* Recovery Correlation */}
@@ -707,8 +915,8 @@ function TrainingIntelligenceSection() {
             <Heart className="w-4 h-4 text-rose-500" />
             <span className="text-xs text-muted-foreground">Recovery</span>
           </div>
-          <p className="text-2xl font-semibold">92<span className="text-sm text-muted-foreground ml-1">%</span></p>
-          <p className="text-[10px] text-emerald-500 mt-1">Optimal range</p>
+          <p className="text-2xl font-semibold">{data.recoveryScore}<span className="text-sm text-muted-foreground ml-1">%</span></p>
+          <p className="text-[10px] text-muted-foreground mt-1">Estimated</p>
         </div>
       </div>
       
@@ -756,7 +964,13 @@ function TrainingIntelligenceSection() {
             
             {/* Distorted radar shape */}
             <motion.polygon
-              points={generateRadarPoints(radarImbalance)}
+              points={generateRadarPoints({
+                volume: data.volumeScore / 100,
+                recovery: data.recoveryScoreRadar / 100,
+                sleep: data.sleepScore / 100,
+                calories: data.calorieScore / 100,
+                stress: data.stressScore / 100,
+              })}
               fill="rgba(16, 185, 129, 0.2)"
               stroke="rgb(16, 185, 129)"
               strokeWidth="2"
@@ -788,24 +1002,49 @@ function TrainingIntelligenceSection() {
 function BodyEvolutionMap({
   value,
   onChange,
+  evolution,
+  isLoading,
 }: {
   value: number;
   onChange: (value: number) => void;
+  evolution: AnalyticsData['evolution'];
+  isLoading: boolean;
 }) {
   const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  const currentMonth = new Date().getMonth();
   
-  // Simulated evolution data
-  const evolutionData = useMemo(() => {
-    return months.map((_, i) => ({
-      weight: 80 - (i * 0.4) + (Math.random() * 0.5),
-      bodyFat: 22 - (i * 0.3) + (Math.random() * 0.3),
-      muscle: 60 + (i * 0.2) - (Math.random() * 0.2),
-    }));
-  }, []);
+  // Find the most recent data point
+  const currentData = evolution.find(e => 
+    e.weight !== null || e.bodyFat !== null || e.leanMass !== null
+  ) || evolution[evolution.length - 1] || { weight: null, bodyFat: null, leanMass: null };
   
-  const currentData = evolutionData[Math.floor(value * 11)] || evolutionData[0];
+  // Get the selected data point
+  const selectedIndex = Math.floor(value * 11);
+  const selectedData = evolution[selectedIndex] || currentData;
   
+  if (isLoading) {
+    return (
+      <div className="px-5">
+        <h3 className="text-sm font-medium text-muted-foreground mb-3">Body Evolution Map</h3>
+        <div className="p-4 rounded-2xl bg-card/60 animate-pulse h-48" />
+      </div>
+    );
+  }
+  
+  const hasData = evolution.some(e => e.weight !== null || e.bodyFat !== null || e.leanMass !== null);
+
+  if (!hasData) {
+    return (
+      <div className="px-5">
+        <h3 className="text-sm font-medium text-muted-foreground mb-3">Body Evolution Map</h3>
+        <div className="p-6 rounded-2xl bg-card/60 backdrop-blur-sm border border-border/30 text-center">
+          <Activity className="w-10 h-10 text-muted-foreground/30 mx-auto mb-2" />
+          <p className="text-sm text-muted-foreground">No evolution data yet</p>
+          <p className="text-xs text-muted-foreground/60 mt-1">Keep logging to see your progress over time</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -820,34 +1059,34 @@ function BodyEvolutionMap({
         <div className="grid grid-cols-3 gap-4 mb-4">
           <div className="text-center">
             <motion.p
-              key={currentData.weight}
+              key={selectedData.weight}
               initial={{ opacity: 0, y: 5 }}
               animate={{ opacity: 1, y: 0 }}
               className="text-xl font-semibold"
             >
-              {currentData.weight.toFixed(1)}
+              {selectedData.weight?.toFixed(1) || '—'}
             </motion.p>
             <p className="text-[10px] text-muted-foreground">kg</p>
           </div>
           <div className="text-center">
             <motion.p
-              key={currentData.bodyFat}
+              key={selectedData.bodyFat}
               initial={{ opacity: 0, y: 5 }}
               animate={{ opacity: 1, y: 0 }}
               className="text-xl font-semibold"
             >
-              {currentData.bodyFat.toFixed(0)}%
+              {selectedData.bodyFat ? `${selectedData.bodyFat.toFixed(0)}%` : '—'}
             </motion.p>
             <p className="text-[10px] text-muted-foreground">body fat</p>
           </div>
           <div className="text-center">
             <motion.p
-              key={currentData.muscle}
+              key={selectedData.leanMass}
               initial={{ opacity: 0, y: 5 }}
               animate={{ opacity: 1, y: 0 }}
               className="text-xl font-semibold"
             >
-              {currentData.muscle.toFixed(1)}
+              {selectedData.leanMass?.toFixed(1) || '—'}
             </motion.p>
             <p className="text-[10px] text-muted-foreground">kg muscle</p>
           </div>
@@ -880,18 +1119,6 @@ function BodyEvolutionMap({
             ))}
           </div>
         </div>
-        
-        {/* Play Button */}
-        <div className="flex justify-center mt-4">
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className="px-4 py-2 rounded-xl bg-muted/50 text-sm text-muted-foreground flex items-center gap-2"
-          >
-            <Activity className="w-4 h-4" />
-            Play Evolution
-          </motion.button>
-        </div>
       </div>
     </motion.div>
   );
@@ -901,64 +1128,26 @@ function BodyEvolutionMap({
 // UTILITY FUNCTIONS
 // ═══════════════════════════════════════════════════════════════
 
-function generateMockData(mode: MetricMode, range: TimeRange): Array<{ date: Date; value: number }> {
-  const days = range === '7d' ? 7 : range === '30d' ? 30 : 90;
-  const data = [];
-  
-  let baseValue: number;
-  let trend: number;
-  
-  switch (mode) {
-    case 'weight':
-      baseValue = 78;
-      trend = -0.02;
-      break;
-    case 'bodyFat':
-      baseValue = 18;
-      trend = -0.01;
-      break;
-    case 'leanMass':
-      baseValue = 62;
-      trend = 0.005;
-      break;
-    case 'calories':
-      baseValue = 2100;
-      trend = 0;
-      break;
-    case 'training':
-      baseValue = 75;
-      trend = 0.02;
-      break;
-    case 'recovery':
-      baseValue = 85;
-      trend = 0.01;
-      break;
-    default:
-      baseValue = 50;
-      trend = 0;
-  }
-  
-  for (let i = days - 1; i >= 0; i--) {
-    const date = new Date();
-    date.setDate(date.getDate() - i);
-    
-    const noise = (Math.random() - 0.5) * (baseValue * 0.02);
-    const value = baseValue + (days - i) * trend * baseValue + noise;
-    
-    data.push({ date, value: Math.max(0, value) });
-  }
-  
-  return data;
-}
-
-function generateRadarPoints(imbalance: number): string {
+function generateRadarPoints(scores: {
+  volume: number;
+  recovery: number;
+  sleep: number;
+  calories: number;
+  stress: number;
+}): string {
   const points: string[] = [];
   const baseRadius = 35;
-  const values = [0.9, 0.85, 0.95, 0.88, 0.92]; // Volume, Recovery, Sleep, Calories, Stress
+  const values = [
+    Math.max(0.3, scores.volume),
+    Math.max(0.3, scores.recovery),
+    Math.max(0.3, scores.sleep),
+    Math.max(0.3, scores.calories),
+    Math.max(0.3, scores.stress),
+  ];
   
   values.forEach((v, i) => {
     const angle = (i * 72 - 90) * Math.PI / 180;
-    const r = baseRadius * v * (1 + (i === 2 ? imbalance : -imbalance * 0.5));
+    const r = baseRadius * v;
     const x = 60 + r * Math.cos(angle);
     const y = 60 + r * Math.sin(angle);
     points.push(`${x},${y}`);
