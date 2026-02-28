@@ -1519,6 +1519,7 @@ export function ProfilePage() {
 
   // Track experiment being started
   const [startingExperimentId, setStartingExperimentId] = useState<string | null>(null);
+  const [savingGoal, setSavingGoal] = useState<string | null>(null);
 
   const handleStartExperiment = useCallback(async (experiment: ProfileData["experiments"][0]) => {
     // Prevent double-clicks
@@ -1559,6 +1560,58 @@ export function ProfilePage() {
       setStartingExperimentId(null);
     }
   }, [startingExperimentId, refetch]);
+
+  // Handle goal change
+  const handleGoalChange = useCallback(async (goalType: string) => {
+    setSavingGoal(goalType);
+    
+    try {
+      const response = await fetch('/api/profile', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          profile: { primaryGoal: goalType },
+        }),
+      });
+      
+      if (response.ok) {
+        toast.success('Goal updated!', {
+          description: `Your primary goal is now ${getGoalLabel(goalType)}.`,
+        });
+        refetch();
+        setGoalSheetOpen(false);
+      } else {
+        toast.error('Failed to update goal');
+      }
+    } catch (error) {
+      console.error('Error updating goal:', error);
+      toast.error('Failed to update goal. Please try again.');
+    } finally {
+      setSavingGoal(null);
+    }
+  }, [refetch]);
+
+  // Handle profile save
+  const handleSaveProfile = useCallback(async (updates: { name?: string; tagline?: string }) => {
+    try {
+      const response = await fetch('/api/profile', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updates),
+      });
+      
+      if (response.ok) {
+        toast.success('Profile updated!');
+        refetch();
+        setEditProfileOpen(false);
+      } else {
+        toast.error('Failed to update profile');
+      }
+    } catch (error) {
+      console.error('Failed to update profile:', error);
+      toast.error('Failed to update profile. Please try again.');
+    }
+  }, [refetch]);
 
   // Handle loading and error states
   if (isLoading) {
@@ -1686,19 +1739,41 @@ export function ProfilePage() {
             </SheetDescription>
           </SheetHeader>
           <div className="px-6 space-y-3">
-            {["fat_loss", "muscle_gain", "recomposition", "maintenance"].map((goal) => (
-              <button
-                key={goal}
-                className="w-full p-4 rounded-xl bg-muted/50 text-left hover:bg-muted transition-colors"
-              >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium">{getGoalLabel(goal)}</p>
+            {["fat_loss", "muscle_gain", "recomposition", "maintenance"].map((goal) => {
+              const isSaving = savingGoal === goal;
+              const isCurrentGoal = data?.goal.primaryGoal === goal;
+              
+              return (
+                <button
+                  key={goal}
+                  onClick={() => handleGoalChange(goal)}
+                  disabled={isSaving || !!savingGoal}
+                  className={cn(
+                    "w-full p-4 rounded-xl text-left transition-all",
+                    isCurrentGoal 
+                      ? "bg-emerald-500/10 border-2 border-emerald-500/30" 
+                      : "bg-muted/50 hover:bg-muted",
+                    isSaving && "opacity-70"
+                  )}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <p className="font-medium">{getGoalLabel(goal)}</p>
+                      {isCurrentGoal && (
+                        <Badge className="bg-emerald-500/20 text-emerald-600 text-[10px]">
+                          Current
+                        </Badge>
+                      )}
+                    </div>
+                    {isSaving ? (
+                      <Loader2 className="w-4 h-4 animate-spin text-emerald-500" />
+                    ) : (
+                      <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                    )}
                   </div>
-                  <ChevronRight className="w-4 h-4 text-muted-foreground" />
-                </div>
-              </button>
-            ))}
+                </button>
+              );
+            })}
           </div>
           <div className="h-[env(safe-area-inset-bottom,0px)]" />
         </SheetContent>
@@ -1769,21 +1844,7 @@ export function ProfilePage() {
           </SheetHeader>
           <EditProfileForm 
             profile={data.profile} 
-            onSave={async (updates) => {
-              try {
-                const response = await fetch('/api/profile', {
-                  method: 'PATCH',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify(updates),
-                });
-                if (response.ok) {
-                  refetch();
-                  setEditProfileOpen(false);
-                }
-              } catch (error) {
-                console.error('Failed to update profile:', error);
-              }
-            }}
+            onSave={handleSaveProfile}
             onCancel={() => setEditProfileOpen(false)}
           />
           <div className="h-[env(safe-area-inset-bottom,0px)]" />

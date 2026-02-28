@@ -425,7 +425,7 @@ export async function GET() {
         description: '90% protein goal for a week',
         achievedAt: undefined,
         totalRequired: 7,
-        progress: 5,
+        progress: 0, // Will be calculated when protein tracking is implemented
       },
       {
         id: 'm4',
