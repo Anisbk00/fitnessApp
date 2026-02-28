@@ -7,22 +7,38 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const type = searchParams.get('type') || 'weight';
     const days = parseInt(searchParams.get('days') || '30');
+    const dateParam = searchParams.get('date');
     
     const user = await db.user.findFirst();
     if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    const startDate = new Date();
-    startDate.setDate(startDate.getDate() - days);
+    // If date param is provided, filter for that specific day
+    let dateFilter: { gte: Date; lte?: Date };
+    
+    if (dateParam) {
+      const targetDate = new Date(dateParam);
+      const startOfDay = new Date(targetDate);
+      startOfDay.setHours(0, 0, 0, 0);
+      const endOfDay = new Date(targetDate);
+      endOfDay.setHours(23, 59, 59, 999);
+      
+      dateFilter = {
+        gte: startOfDay,
+        lte: endOfDay,
+      };
+    } else {
+      const startDate = new Date();
+      startDate.setDate(startDate.getDate() - days);
+      dateFilter = { gte: startDate };
+    }
 
     const measurements = await db.measurement.findMany({
       where: {
         userId: user.id,
         measurementType: type,
-        capturedAt: {
-          gte: startDate,
-        },
+        capturedAt: dateFilter,
       },
       orderBy: { capturedAt: 'desc' },
     });
@@ -59,12 +75,27 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
+    // Map common type aliases to measurement types
+    const typeMapping: Record<string, string> = {
+      'water': 'water',
+      'weight': 'weight',
+      'body_fat': 'body_fat',
+      'waist': 'waist',
+      'hips': 'hips',
+      'chest': 'chest',
+      'arm': 'arm',
+      'thigh': 'thigh',
+      'neck': 'neck',
+    };
+
+    const measurementType = typeMapping[body.type] || body.type || 'weight';
+
     const measurement = await db.measurement.create({
       data: {
         userId: user.id,
-        measurementType: body.type || 'weight',
-        value: body.value,
-        unit: body.unit || 'kg',
+        measurementType: measurementType,
+        value: parseFloat(body.value) || 0,
+        unit: body.unit || (measurementType === 'water' ? 'ml' : 'kg'),
         capturedAt: body.capturedAt ? new Date(body.capturedAt) : new Date(),
         source: body.source || 'manual',
         confidence: body.confidence || 1.0,

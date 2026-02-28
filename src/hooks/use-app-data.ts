@@ -33,6 +33,7 @@ export interface FoodLogEntry {
   fat: number;
   source: string;
   loggedAt: string;
+  rationale?: string | null;
   food: {
     id: string;
     name: string;
@@ -64,6 +65,7 @@ const DEFAULT_TARGETS = {
   protein: 165,
   carbs: 220,
   fat: 75,
+  water: 2500, // ml
 };
 
 // User Data Hook
@@ -169,12 +171,22 @@ export function useFoodLog(date?: string) {
     fetchEntries();
   }, [fetchEntries]);
 
-  const addEntry = useCallback(async (entry: Partial<FoodLogEntry>) => {
+  const addEntry = useCallback(async (entry: Partial<FoodLogEntry> & { foodName?: string }) => {
     try {
       const response = await fetch('/api/food-log', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(entry),
+        body: JSON.stringify({
+          foodId: entry.foodId,
+          foodName: entry.foodName,
+          quantity: entry.quantity,
+          unit: entry.unit,
+          calories: entry.calories,
+          protein: entry.protein,
+          carbs: entry.carbs,
+          fat: entry.fat,
+          source: entry.source,
+        }),
       });
       if (!response.ok) throw new Error('Failed to add entry');
       await fetchEntries();
@@ -366,4 +378,74 @@ function generateWeeklyData() {
     });
   }
   return data;
+}
+
+// Hydration Hook - Uses measurements table with type 'water'
+export interface HydrationData {
+  current: number; // ml
+  target: number; // ml
+  glasses: number; // number of 250ml glasses
+}
+
+export function useHydration(date?: string) {
+  const [hydration, setHydration] = useState<HydrationData>({
+    current: 0,
+    target: DEFAULT_TARGETS.water,
+    glasses: 0,
+  });
+  const [isLoading, setIsLoading] = useState(true);
+
+  const fetchHydration = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      const dateParam = date || new Date().toISOString().split('T')[0];
+      const response = await fetch(`/api/measurements?type=water&date=${dateParam}`);
+      if (!response.ok) throw new Error('Failed to fetch hydration');
+      const data = await response.json();
+      
+      // Sum all water measurements for today - handle empty/undefined arrays
+      const measurements = Array.isArray(data.measurements) ? data.measurements : [];
+      const totalWater = measurements.reduce((sum: number, m: { value: number }) => sum + (m.value || 0), 0);
+      
+      setHydration({
+        current: totalWater,
+        target: DEFAULT_TARGETS.water,
+        glasses: Math.floor(totalWater / 250),
+      });
+    } catch (err) {
+      console.error('Error fetching hydration:', err);
+      // Keep hydration at 0 on error
+      setHydration({
+        current: 0,
+        target: DEFAULT_TARGETS.water,
+        glasses: 0,
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [date]);
+
+  useEffect(() => {
+    fetchHydration();
+  }, [fetchHydration]);
+
+  const addWater = useCallback(async (ml: number) => {
+    try {
+      const response = await fetch('/api/measurements', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'water', value: ml, unit: 'ml' }),
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to add water');
+      }
+      await fetchHydration();
+    } catch (err) {
+      console.error('Error adding water:', err);
+      throw err; // Re-throw to let the UI handle it
+    }
+  }, [fetchHydration]);
+
+  return { hydration, isLoading, addWater, refetch: fetchHydration };
 }

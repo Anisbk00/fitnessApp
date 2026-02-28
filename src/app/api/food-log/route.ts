@@ -60,10 +60,20 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
+    // Only set foodId if it's a valid ID (not a mock/temp ID)
+    let foodId = null;
+    if (body.foodId && !body.foodId.startsWith('mock-') && !body.foodId.startsWith('suggestion-')) {
+      // Verify the food exists
+      const foodExists = await db.food.findUnique({ where: { id: body.foodId } });
+      if (foodExists) {
+        foodId = body.foodId;
+      }
+    }
+
     const entry = await db.foodLogEntry.create({
       data: {
         userId: user.id,
-        foodId: body.foodId || null,
+        foodId: foodId,
         mealId: body.mealId || null,
         quantity: body.quantity || 100,
         unit: body.unit || 'g',
@@ -73,6 +83,7 @@ export async function POST(request: NextRequest) {
         fat: body.fat || 0,
         source: body.source || 'manual',
         confidence: body.confidence || 1.0,
+        rationale: body.foodName ? `Food: ${body.foodName}` : null,
         loggedAt: body.loggedAt ? new Date(body.loggedAt) : new Date(),
       },
       include: {
