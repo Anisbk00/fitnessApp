@@ -247,9 +247,32 @@ export default function ProgressCompanionHome() {
   const [pullDistance, setPullDistance] = useState(0);
   const [activeTab, setActiveTab] = useState('home');
   
-  // Onboarding State - Skip onboarding by default for testing
-  const [showOnboarding, setShowOnboarding] = useState(false);
+  // Onboarding State - Check localStorage on mount
+  const [mounted, setMounted] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(true);
   const [onboardingData, setOnboardingData] = useState<OnboardingData | null>(null);
+  
+  // Check if user has already completed onboarding
+  useEffect(() => {
+    const savedOnboarding = localStorage.getItem('progress-companion-onboarding');
+    if (savedOnboarding) {
+      try {
+        const parsed = JSON.parse(savedOnboarding);
+        if (parsed.completedAt) {
+          // Use requestAnimationFrame to defer state updates
+          requestAnimationFrame(() => {
+            setShowOnboarding(false);
+            setOnboardingData(parsed);
+            setMounted(true);
+          });
+          return;
+        }
+      } catch {
+        // Invalid data, show onboarding
+      }
+    }
+    requestAnimationFrame(() => setMounted(true));
+  }, []);
   
   // Sheet States
   const [streakSheetOpen, setStreakSheetOpen] = useState(false);
@@ -317,8 +340,21 @@ export default function ProgressCompanionHome() {
 
   return (
     <>
-      {/* Onboarding Flow */}
-      {showOnboarding && (
+      {/* Loading state while checking localStorage */}
+      {!mounted && (
+        <div className="fixed inset-0 bg-background flex items-center justify-center">
+          <motion.div
+            className="w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center"
+            animate={{ scale: [1, 1.05, 1] }}
+            transition={{ duration: 1.5, repeat: Infinity }}
+          >
+            <Activity className="w-8 h-8 text-white" />
+          </motion.div>
+        </div>
+      )}
+      
+      {/* Onboarding Flow - First time users only */}
+      {mounted && showOnboarding && (
         <OnboardingFlow
           onComplete={handleOnboardingComplete}
           onSkip={() => setShowOnboarding(false)}
@@ -326,7 +362,7 @@ export default function ProgressCompanionHome() {
       )}
       
       {/* Main App */}
-      {!showOnboarding && (
+      {mounted && !showOnboarding && (
     <div className="fixed inset-0 bg-background flex flex-col ios-safe-area overflow-hidden">
       {/* iOS Status Bar Spacer */}
       <div className="h-[env(safe-area-inset-top,20px)] bg-background flex-shrink-0" />
