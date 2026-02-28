@@ -1255,129 +1255,6 @@ function BadgeDetailSheet({
   );
 }
 
-// Photo Modal with Body Composition Data
-function PhotoModal({
-  open,
-  onClose,
-  photo,
-}: {
-  open: boolean;
-  onClose: () => void;
-  photo: ProfileData["progressPhotos"][0] | null;
-}) {
-  if (!photo) return null;
-
-  const bodyFatAvg = photo.bodyFat ? (photo.bodyFat.min + photo.bodyFat.max) / 2 : null;
-
-  return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-[90vw] max-h-[90vh] p-0 bg-black/95 border-none">
-        <div className="relative w-full h-[80vh] flex">
-          {/* Photo View */}
-          <div className="flex-1 flex items-center justify-center">
-            <div className="aspect-[3/4] h-full bg-gradient-to-br from-emerald-500/20 to-teal-500/20 flex items-center justify-center">
-              <User className="w-24 h-24 text-emerald-500/30" />
-            </div>
-          </div>
-
-          {/* Body Composition Panel */}
-          <div className="w-72 bg-black/90 border-l border-white/10 p-4 overflow-y-auto">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-white font-medium">AI Analysis</h3>
-              <button
-                onClick={onClose}
-                className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center"
-              >
-                <X className="w-4 h-4 text-white/70" />
-              </button>
-            </div>
-
-            {/* Date */}
-            <div className="mb-4">
-              <p className="text-white/50 text-xs">Captured</p>
-              <p className="text-white text-sm font-medium">{format(new Date(photo.date), "MMMM d, yyyy")}</p>
-            </div>
-
-            {/* Body Fat */}
-            {photo.bodyFat && (
-              <div className="mb-4 p-3 rounded-xl bg-white/5">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-white/70 text-xs">Body Fat</span>
-                  <ConfidenceBadge confidence={photo.bodyFat.confidence} size="xs" />
-                </div>
-                <div className="flex items-baseline gap-1">
-                  <span className="text-2xl font-bold text-purple-400">{bodyFatAvg?.toFixed(0)}%</span>
-                  <span className="text-white/50 text-xs">({photo.bodyFat.min}–{photo.bodyFat.max}%)</span>
-                </div>
-                <div className="mt-2 h-2 bg-white/10 rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-gradient-to-r from-purple-500 to-violet-500 rounded-full"
-                    style={{ width: `${Math.min(100, bodyFatAvg || 0)}%` }}
-                  />
-                </div>
-              </div>
-            )}
-
-            {/* Muscle Mass */}
-            {photo.muscleMass && (
-              <div className="mb-4 p-3 rounded-xl bg-white/5">
-                <span className="text-white/70 text-xs">Muscle Mass</span>
-                <p className="text-xl font-bold text-emerald-400 mt-1">{photo.muscleMass.toFixed(1)} kg</p>
-              </div>
-            )}
-
-            {/* Change Zones */}
-            {photo.changeZones && photo.changeZones.length > 0 && (
-              <div className="mb-4">
-                <span className="text-white/70 text-xs">Detected Changes</span>
-                <div className="mt-2 space-y-2">
-                  {photo.changeZones.map((zone, index) => (
-                    <div key={index} className="flex items-center justify-between p-2 rounded-lg bg-white/5">
-                      <span className="text-white/80 text-xs capitalize">{zone.area}</span>
-                      <Badge className={cn(
-                        "text-[10px]",
-                        zone.direction === "improved" && "bg-emerald-500/20 text-emerald-400",
-                        zone.direction === "declined" && "bg-rose-500/20 text-rose-400",
-                        zone.direction === "stable" && "bg-slate-500/20 text-slate-400"
-                      )}>
-                        {zone.direction}
-                      </Badge>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Notes */}
-            {photo.notes && (
-              <div className="mt-4 pt-4 border-t border-white/10">
-                <span className="text-white/50 text-xs">Notes</span>
-                <p className="text-white/80 text-sm mt-1">{photo.notes}</p>
-              </div>
-            )}
-
-            {/* No Data */}
-            {!photo.bodyFat && !photo.muscleMass && !photo.changeZones && (
-              <div className="text-center py-8">
-                <Brain className="w-10 h-10 mx-auto mb-2 text-white/20" />
-                <p className="text-white/50 text-sm">No AI analysis available for this photo</p>
-              </div>
-            )}
-          </div>
-
-          {/* Close button */}
-          <button
-            onClick={onClose}
-            className="absolute top-4 left-4 w-10 h-10 rounded-full bg-white/20 flex items-center justify-center md:hidden"
-          >
-            <ChevronLeft className="w-5 h-5 text-white" />
-          </button>
-        </div>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
 // Edit Profile Form
 function EditProfileForm({
   profile,
@@ -1487,23 +1364,15 @@ export function ProfilePage() {
   const { data, isLoading, error, refetch } = useProfileData();
   
   // Sheet/Modal states
-  const [photoModalOpen, setPhotoModalOpen] = useState(false);
   const [badgeSheetOpen, setBadgeSheetOpen] = useState(false);
   const [goalSheetOpen, setGoalSheetOpen] = useState(false);
-  const [uploadSheetOpen, setUploadSheetOpen] = useState(false);
   const [editProfileOpen, setEditProfileOpen] = useState(false);
   const [exportSheetOpen, setExportSheetOpen] = useState(false);
 
   // Selected items
-  const [selectedPhoto, setSelectedPhoto] = useState<ProfileData["progressPhotos"][0] | null>(null);
   const [selectedBadge, setSelectedBadge] = useState<ProfileData["badges"][0] | null>(null);
 
   // Handlers - must be defined before early returns
-  const handlePhotoTap = useCallback((photo: ProfileData["progressPhotos"][0]) => {
-    setSelectedPhoto(photo);
-    setPhotoModalOpen(true);
-  }, []);
-
   const handleBadgeTap = useCallback((badge: ProfileData["badges"][0]) => {
     setSelectedBadge(badge);
     setBadgeSheetOpen(true);
@@ -1668,19 +1537,6 @@ export function ProfilePage() {
         onAdjust={() => setGoalSheetOpen(true)}
       />
 
-      {/* AI Body Composition */}
-      <AIBodyComposition
-        result={data.bodyComposition}
-        onUploadPhoto={() => setUploadSheetOpen(true)}
-      />
-
-      {/* Transformation Archive */}
-      <TransformationArchive
-        photos={data.progressPhotos}
-        onPhotoTap={handlePhotoTap}
-        onUploadPhoto={() => setUploadSheetOpen(true)}
-      />
-
       {/* Achievement Badges */}
       <AchievementBadges
         badges={data.badges}
@@ -1698,24 +1554,6 @@ export function ProfilePage() {
       <IdentitySnapshot
         snapshot={data.snapshot}
         onExport={() => setExportSheetOpen(true)}
-      />
-
-      {/* Floating Upload Button */}
-      <motion.button
-        className="fixed right-4 w-14 h-14 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-lg flex items-center justify-center z-30"
-        style={{ bottom: 'calc(80px + env(safe-area-inset-bottom, 0px))' }}
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
-        onClick={() => setUploadSheetOpen(true)}
-      >
-        <Camera className="w-6 h-6" />
-      </motion.button>
-
-      {/* Photo Modal */}
-      <PhotoModal
-        open={photoModalOpen}
-        onClose={() => setPhotoModalOpen(false)}
-        photo={selectedPhoto}
       />
 
       {/* Badge Detail Sheet */}
@@ -1774,31 +1612,6 @@ export function ProfilePage() {
                 </button>
               );
             })}
-          </div>
-          <div className="h-[env(safe-area-inset-bottom,0px)]" />
-        </SheetContent>
-      </Sheet>
-
-      {/* Upload Sheet */}
-      <Sheet open={uploadSheetOpen} onOpenChange={setUploadSheetOpen}>
-        <SheetContent side="bottom" className="rounded-t-3xl px-0">
-          <div className="h-1 w-12 bg-muted rounded-full mx-auto mt-2 mb-4" />
-          <SheetHeader className="px-6 pb-4">
-            <SheetTitle className="flex items-center gap-2">
-              <Upload className="w-5 h-5 text-emerald-500" />
-              Upload Progress Photo
-            </SheetTitle>
-            <SheetDescription>
-              Stand 1.5m back, minimal bulky clothing, front pose for best results
-            </SheetDescription>
-          </SheetHeader>
-          <div className="px-6">
-            <div className="border-2 border-dashed border-muted-foreground/25 rounded-xl p-8 text-center">
-              <Camera className="w-12 h-12 mx-auto mb-3 text-muted-foreground/50" />
-              <p className="text-sm text-muted-foreground">
-                Tap to take or upload a photo
-              </p>
-            </div>
           </div>
           <div className="h-[env(safe-area-inset-bottom,0px)]" />
         </SheetContent>
