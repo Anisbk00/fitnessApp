@@ -608,72 +608,157 @@ function TrajectoryCompass({
   );
 }
 
-// Stats Overview Grid
-function StatsGrid({
+// Evolution Metrics Strip - Horizontal premium stat cards
+function EvolutionMetricsStrip({
   stats,
-  onStatTap,
+  onMetricTap,
 }: {
   stats: UserStats;
-  onStatTap: (stat: string) => void;
+  onMetricTap: (id: string) => void;
 }) {
-  const statCards = [
-    {
-      id: "weight",
-      label: "Current Weight",
-      value: `${stats.currentWeight} ${stats.weightUnit}`,
-      trend: stats.weightTrend,
-      change: `${stats.weightChange > 0 ? "+" : ""}${stats.weightChange} ${stats.weightUnit}`,
-      icon: <Scale className="w-4 h-4" />,
-    },
-    {
-      id: "goal",
-      label: "Goal",
-      value: stats.goalType === "lose" ? `Lose to ${stats.goalWeight} ${stats.weightUnit}` : 
-             stats.goalType === "gain" ? `Gain to ${stats.goalWeight} ${stats.weightUnit}` :
-             stats.goalType === "muscle" ? "Build Muscle" : "Maintain",
-      trend: "neutral",
-      icon: <Target className="w-4 h-4" />,
-    },
-    {
-      id: "consistency",
-      label: "Consistency",
-      value: `${stats.consistency}%`,
-      trend: stats.consistency >= 80 ? "up" : stats.consistency >= 60 ? "neutral" : "down",
-      icon: <Activity className="w-4 h-4" />,
-    },
-    {
-      id: "streak",
-      label: "Current Streak",
-      value: `${stats.streak} days`,
-      trend: "up",
-      icon: <Flame className="w-4 h-4" />,
-    },
+  const metrics = [
+    { id: "weight", label: "Weight", value: stats.currentWeight.toFixed(1), unit: stats.weightUnit, icon: Scale },
+    { id: "bodyFat", label: "Body Fat", value: "20", unit: "%", icon: Activity },
+    { id: "leanMass", label: "Lean", value: "61.7", unit: "kg", icon: Dumbbell },
+    { id: "streak", label: "Streak", value: `${stats.streak}`, unit: "days", icon: Flame },
+    { id: "bodyScore", label: "Score", value: "84", unit: "", icon: Gauge },
   ];
 
   return (
-    <div className="grid grid-cols-2 gap-3">
-      {statCards.map((stat, index) => (
-        <motion.button
-          key={stat.id}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: index * 0.1 }}
-          onClick={() => onStatTap(stat.id)}
-          className="p-4 rounded-2xl bg-card border border-border text-left touch-manipulation hover:border-emerald-500/50 transition-colors"
-        >
-          <div className="flex items-center justify-between mb-2">
-            <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-500">
-              {stat.icon}
+    <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide -mx-4 px-4">
+      {metrics.map((metric, index) => {
+        const Icon = metric.icon;
+        return (
+          <motion.button
+            key={metric.id}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: index * 0.05 }}
+            onClick={() => onMetricTap(metric.id)}
+            className="flex-shrink-0 w-[68px] p-2.5 rounded-xl bg-card/80 backdrop-blur-sm border border-border/50 hover:border-emerald-500/30 transition-all active:scale-95"
+          >
+            <Icon className="w-3.5 h-3.5 text-muted-foreground mx-auto mb-1" />
+            <div className="text-center">
+              <span className="text-base font-bold block leading-tight">{metric.value}</span>
+              <span className="text-[9px] text-muted-foreground">{metric.unit}</span>
             </div>
-            {stat.trend === "up" && <TrendingUp className="w-4 h-4 text-emerald-500" />}
-            {stat.trend === "down" && <TrendingDown className="w-4 h-4 text-rose-500" />}
-            {stat.trend === "neutral" && <Minus className="w-4 h-4 text-muted-foreground" />}
-          </div>
-          <p className="text-xs text-muted-foreground">{stat.label}</p>
-          <p className="text-lg font-bold mt-1">{stat.value}</p>
-        </motion.button>
-      ))}
+            <p className="text-[9px] text-muted-foreground mt-0.5 text-center truncate">{metric.label}</p>
+          </motion.button>
+        );
+      })}
     </div>
+  );
+}
+
+// AI Evolution Summary Card
+function AIEvolutionSummary() {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="p-3 rounded-2xl bg-gradient-to-br from-purple-500/10 to-violet-500/10 border border-purple-500/20"
+    >
+      <div className="flex items-start gap-2.5">
+        <div className="w-8 h-8 rounded-xl bg-purple-500/20 flex items-center justify-center flex-shrink-0">
+          <Sparkles className="w-4 h-4 text-purple-500" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium text-purple-600 dark:text-purple-400">AI Evolution Summary</p>
+          <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+            Abdominal definition improved. Shoulder mass slightly increased. Body fat trending downward. Metabolic markers stable.
+          </p>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
+// Milestones Section - Minimal glass tiles
+function MilestonesSection({
+  onMilestoneTap,
+}: {
+  onMilestoneTap: (milestone: { id: string; title: string; description: string; achievedAt?: Date; progress?: number; totalRequired: number }) => void;
+}) {
+  const milestones = [
+    { id: "m1", title: "First 30 Days", description: "Completed first month", achievedAt: subDays(new Date(), 60), totalRequired: 30 },
+    { id: "m2", title: "5 kg Lost", description: "Lost 5 kg", achievedAt: subDays(new Date(), 14), totalRequired: 5 },
+    { id: "m3", title: "Protein Consistency", description: "90% protein goal for a week", progress: 5, totalRequired: 7 },
+    { id: "m4", title: "First PR", description: "Recorded first personal record", achievedAt: subDays(new Date(), 30), totalRequired: 1 },
+  ];
+
+  return (
+    <Card>
+      <CardHeader className="pb-2 pt-4 px-4">
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Award className="w-4 h-4 text-emerald-500" />
+            Milestones
+          </CardTitle>
+          <span className="text-xs text-muted-foreground">
+            {milestones.filter(m => m.achievedAt).length} achieved
+          </span>
+        </div>
+      </CardHeader>
+      <CardContent className="px-4 pb-4 space-y-2">
+        {milestones.slice(0, 4).map((milestone, index) => {
+          const isAchieved = !!milestone.achievedAt;
+          const progress = milestone.progress ? (milestone.progress / milestone.totalRequired) * 100 : 0;
+          
+          return (
+            <motion.button
+              key={milestone.id}
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: index * 0.05 }}
+              onClick={() => onMilestoneTap(milestone)}
+              className={cn(
+                "w-full p-3 rounded-xl border text-left transition-all active:scale-[0.98]",
+                isAchieved
+                  ? "bg-gradient-to-r from-emerald-500/10 to-teal-500/10 border-emerald-500/20"
+                  : "bg-card/60 border-border/50 hover:border-emerald-500/30"
+              )}
+            >
+              <div className="flex items-center gap-3">
+                <div className={cn(
+                  "w-9 h-9 rounded-xl flex items-center justify-center",
+                  isAchieved ? "bg-emerald-500/20" : "bg-muted/50"
+                )}>
+                  {isAchieved ? (
+                    <Award className="w-4 h-4 text-emerald-500" />
+                  ) : (
+                    <Target className="w-4 h-4 text-muted-foreground" />
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate">{milestone.title}</p>
+                  <p className="text-xs text-muted-foreground truncate">{milestone.description}</p>
+                  {!isAchieved && milestone.progress !== undefined && (
+                    <div className="mt-1.5 h-1 bg-muted/50 rounded-full overflow-hidden">
+                      <motion.div
+                        className="h-full bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full"
+                        initial={{ width: 0 }}
+                        animate={{ width: `${progress}%` }}
+                        transition={{ duration: 0.5, delay: 0.3 }}
+                      />
+                    </div>
+                  )}
+                </div>
+                {isAchieved && (
+                  <span className="text-xs text-muted-foreground">
+                    {format(milestone.achievedAt!, "MMM d")}
+                  </span>
+                )}
+                {!isAchieved && milestone.progress !== undefined && (
+                  <span className="text-xs text-muted-foreground">
+                    {milestone.progress}/{milestone.totalRequired}
+                  </span>
+                )}
+              </div>
+            </motion.button>
+          );
+        })}
+      </CardContent>
+    </Card>
   );
 }
 
@@ -1408,11 +1493,14 @@ export function ProfilePage() {
         onEditProfile={() => setEditProfileOpen(true)}
       />
 
-      {/* Stats Grid */}
-      <StatsGrid
+      {/* Evolution Metrics Strip */}
+      <EvolutionMetricsStrip
         stats={mockStats}
-        onStatTap={handleStatTap}
+        onMetricTap={handleStatTap}
       />
+      
+      {/* AI Evolution Summary */}
+      <AIEvolutionSummary />
 
       {/* Goal Architecture */}
       <GoalArchitectureCard
@@ -1432,6 +1520,9 @@ export function ProfilePage() {
         onPhotoTap={handlePhotoTap}
         onUploadPhoto={() => setUploadSheetOpen(true)}
       />
+      
+      {/* Milestones */}
+      <MilestonesSection onMilestoneTap={() => {}} />
 
       {/* Achievement Badges */}
       <AchievementBadges
