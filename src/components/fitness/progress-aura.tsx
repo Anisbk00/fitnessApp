@@ -1,5 +1,6 @@
 'use client';
 
+import { useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 
@@ -70,6 +71,18 @@ const trendColors = {
   },
 };
 
+// Pre-calculate particle positions to avoid hydration mismatch
+const getParticlePositions = (containerSize: number, radius: number) => {
+  const positions: { cx: number; cy: number }[] = [];
+  for (let i = 0; i < 6; i++) {
+    const angle = (i / 6) * 360;
+    const cx = Math.round((containerSize / 2 + radius * Math.cos((angle * Math.PI) / 180)) * 100) / 100;
+    const cy = Math.round((containerSize / 2 + radius * Math.sin((angle * Math.PI) / 180)) * 100) / 100;
+    positions.push({ cx, cy });
+  }
+  return positions;
+};
+
 export function ProgressAura({
   consistency,
   trend,
@@ -81,7 +94,7 @@ export function ProgressAura({
   const colors = trendColors[trend];
   const normalizedConsistency = Math.max(0, Math.min(100, consistency));
 
-  // Calculate opacity based on consistency (higher consistency = more visible rings)
+  // Calculate opacity based on consistency
   const getOpacity = (ringIndex: number): number => {
     const baseOpacity = 0.3 + (normalizedConsistency / 100) * 0.5;
     const ringDiminish = ringIndex * 0.15;
@@ -97,6 +110,12 @@ export function ProgressAura({
   // Generate unique gradient IDs
   const gradientId = `aura-gradient-${trend}-${size}`;
   const glowId = `aura-glow-${trend}-${size}`;
+
+  // Pre-calculate particle positions
+  const particlePositions = useMemo(
+    () => getParticlePositions(config.container, config.rings[1].radius),
+    [config.container, config.rings]
+  );
 
   return (
     <div
@@ -125,14 +144,11 @@ export function ProgressAura({
         style={{ filter: `drop-shadow(0 0 ${config.container / 15}px ${colors.glow})` }}
       >
         <defs>
-          {/* Gradient Definition */}
           <linearGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="100%">
             <stop offset="0%" stopColor={colors.gradient[0]} />
             <stop offset="50%" stopColor={colors.gradient[1]} />
             <stop offset="100%" stopColor={colors.gradient[2]} />
           </linearGradient>
-
-          {/* Glow Filter */}
           <filter id={glowId} x="-50%" y="-50%" width="200%" height="200%">
             <feGaussianBlur stdDeviation="3" result="coloredBlur" />
             <feMerge>
@@ -142,7 +158,7 @@ export function ProgressAura({
           </filter>
         </defs>
 
-        {/* Background Rings (subtle) */}
+        {/* Background Rings */}
         {config.rings.map((ring, index) => (
           <motion.circle
             key={`bg-ring-${index}`}
@@ -164,7 +180,7 @@ export function ProgressAura({
           {config.rings.map((ring, index) => {
             const dashArray = getDashArray(ring.radius);
             const circumference = 2 * Math.PI * ring.radius;
-            const rotation = index * 15 - 45; // Offset each ring
+            const rotation = index * 15 - 45;
             const duration = 20 + index * 5;
             const delay = index * 2;
 
@@ -180,29 +196,13 @@ export function ProgressAura({
                 strokeLinecap="round"
                 strokeDasharray={`${dashArray} ${circumference}`}
                 filter={`url(#${glowId})`}
-                style={{
-                  originX: '50%',
-                  originY: '50%',
-                }}
-                initial={{
-                  opacity: 0,
-                  strokeDasharray: `0 ${circumference}`,
-                  rotate: rotation,
-                }}
-                animate={{
-                  opacity: getOpacity(index),
-                  strokeDasharray: `${dashArray} ${circumference}`,
-                  rotate: [rotation, rotation + 360],
-                }}
+                style={{ originX: '50%', originY: '50%' }}
+                initial={{ opacity: 0, strokeDasharray: `0 ${circumference}`, rotate: rotation }}
+                animate={{ opacity: getOpacity(index), strokeDasharray: `${dashArray} ${circumference}`, rotate: [rotation, rotation + 360] }}
                 transition={{
                   opacity: { duration: 0.5, delay: index * 0.15 },
                   strokeDasharray: { duration: 1.2, delay: index * 0.15, ease: 'easeOut' },
-                  rotate: {
-                    duration,
-                    delay,
-                    repeat: Infinity,
-                    ease: 'linear',
-                  },
+                  rotate: { duration, delay, repeat: Infinity, ease: 'linear' },
                 }}
               />
             );
@@ -210,34 +210,19 @@ export function ProgressAura({
         </AnimatePresence>
 
         {/* Pulsing Energy Particles */}
-        {[...Array(6)].map((_, index) => {
-          const angle = (index / 6) * 360;
-          const radius = config.rings[1].radius;
-          const cx = config.container / 2 + radius * Math.cos((angle * Math.PI) / 180);
-          const cy = config.container / 2 + radius * Math.sin((angle * Math.PI) / 180);
-
-          return (
-            <motion.circle
-              key={`particle-${index}`}
-              cx={cx}
-              cy={cy}
-              r={1.5 + (normalizedConsistency / 100) * 1.5}
-              fill={colors.primary}
-              initial={{ opacity: 0, scale: 0 }}
-              animate={{
-                opacity: [0, getOpacity(0), 0],
-                scale: [0.5, 1.2, 0.5],
-              }}
-              transition={{
-                duration: 2,
-                delay: index * 0.3,
-                repeat: Infinity,
-                ease: 'easeInOut',
-              }}
-              style={{ filter: `drop-shadow(0 0 4px ${colors.glow})` }}
-            />
-          );
-        })}
+        {particlePositions.map((pos, index) => (
+          <motion.circle
+            key={`particle-${index}`}
+            cx={pos.cx}
+            cy={pos.cy}
+            r={Math.round((1.5 + (normalizedConsistency / 100) * 1.5) * 10) / 10}
+            fill={colors.primary}
+            initial={{ opacity: 0, scale: 0 }}
+            animate={{ opacity: [0, getOpacity(0), 0], scale: [0.5, 1.2, 0.5] }}
+            transition={{ duration: 2, delay: index * 0.3, repeat: Infinity, ease: 'easeInOut' }}
+            style={{ filter: `drop-shadow(0 0 4px ${colors.glow})` }}
+          />
+        ))}
       </svg>
 
       {/* Inner Glow Ring */}
@@ -246,23 +231,18 @@ export function ProgressAura({
         style={{
           width: config.image + 16,
           height: config.image + 16,
-          border: `2px solid transparent`,
-          background: `linear-gradient(var(--background, white), var(--background, white)) padding-box,
-                       linear-gradient(135deg, ${colors.primary}, ${colors.secondary}) border-box`,
-          boxShadow: `inset 0 0 ${config.image / 5}px ${colors.glow}`,
+          border: '2px solid transparent',
+          background: `linear-gradient(var(--background, white), var(--background, white)) padding-box, linear-gradient(135deg, ${colors.primary}, ${colors.secondary}) border-box`,
+          boxShadow: `inset 0 0 ${Math.round(config.image / 5)}px ${colors.glow}`,
         }}
         animate={{
           boxShadow: [
-            `inset 0 0 ${config.image / 5}px ${colors.glow}`,
-            `inset 0 0 ${config.image / 3}px ${colors.glow}`,
-            `inset 0 0 ${config.image / 5}px ${colors.glow}`,
+            `inset 0 0 ${Math.round(config.image / 5)}px ${colors.glow}`,
+            `inset 0 0 ${Math.round(config.image / 3)}px ${colors.glow}`,
+            `inset 0 0 ${Math.round(config.image / 5)}px ${colors.glow}`,
           ],
         }}
-        transition={{
-          duration: 3,
-          repeat: Infinity,
-          ease: 'easeInOut',
-        }}
+        transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
       />
 
       {/* Profile Image Container */}
@@ -271,22 +251,14 @@ export function ProgressAura({
         style={{
           width: config.image,
           height: config.image,
-          boxShadow: `
-            0 4px 6px -1px rgba(0, 0, 0, 0.1),
-            0 2px 4px -2px rgba(0, 0, 0, 0.1),
-            inset 0 2px 4px rgba(255, 255, 255, 0.1)
-          `,
+          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1), inset 0 2px 4px rgba(255, 255, 255, 0.1)',
         }}
         initial={{ scale: 0.8, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ type: 'spring', stiffness: 200, damping: 20 }}
       >
         {imageUrl ? (
-          <img
-            src={imageUrl}
-            alt="Profile"
-            className="w-full h-full object-cover"
-          />
+          <img src={imageUrl} alt="Profile" className="w-full h-full object-cover" />
         ) : (
           <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-muted-foreground/20 to-muted-foreground/10">
             <motion.div
@@ -317,18 +289,13 @@ export function ProgressAura({
           className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
           initial={{ x: '-100%' }}
           animate={{ x: '100%' }}
-          transition={{
-            duration: 2,
-            repeat: Infinity,
-            repeatDelay: 3,
-            ease: 'easeInOut',
-          }}
+          transition={{ duration: 2, repeat: Infinity, repeatDelay: 3, ease: 'easeInOut' }}
         />
       </motion.div>
 
       {/* Consistency Badge */}
       <motion.div
-        className="absolute flex items-center justify-center rounded-full font-semibold tabular-nums"
+        className="absolute flex items-center justify-center rounded-full font-semibold tabular-nums text-white"
         style={{
           width: config.image / 2.5,
           height: config.image / 2.5,
@@ -336,12 +303,7 @@ export function ProgressAura({
           right: -config.image / 12,
           fontSize: size === 'sm' ? '0.625rem' : size === 'md' ? '0.75rem' : '0.875rem',
           background: `linear-gradient(135deg, ${colors.primary}, ${colors.secondary})`,
-          color: 'white',
-          boxShadow: `
-            0 4px 6px -1px rgba(0, 0, 0, 0.2),
-            0 2px 4px -2px rgba(0, 0, 0, 0.1),
-            0 0 12px ${colors.glow}
-          `,
+          boxShadow: `0 4px 6px -1px rgba(0, 0, 0, 0.2), 0 2px 4px -2px rgba(0, 0, 0, 0.1), 0 0 12px ${colors.glow}`,
         }}
         initial={{ scale: 0, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}

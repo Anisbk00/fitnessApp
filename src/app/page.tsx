@@ -226,7 +226,6 @@ export default function ProgressCompanion() {
   const [activeTab, setActiveTab] = useState("home");
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [chatMessage, setChatMessage] = useState("");
-  const [mounted, setMounted] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [pullDistance, setPullDistance] = useState(0);
   const [coachingTone, setCoachingTone] = useState<'strict' | 'supportive' | 'minimal'>('supportive');
@@ -250,10 +249,6 @@ export default function ProgressCompanion() {
     }
     setPullDistance(0);
   };
-
-  if (!mounted) {
-    queueMicrotask(() => setMounted(true));
-  }
 
   const isDark = theme === 'dark';
 
