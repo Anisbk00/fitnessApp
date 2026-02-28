@@ -109,7 +109,7 @@ export function useUserData() {
   return { user, isLoading, error, refetch: fetchUser };
 }
 
-// Nutrition Data Hook
+// Nutrition Data Hook with Real-time Updates
 export function useNutritionData(date?: string) {
   const [nutrition, setNutrition] = useState<NutritionData>({
     calories: { current: 0, target: DEFAULT_TARGETS.calories },
@@ -119,9 +119,9 @@ export function useNutritionData(date?: string) {
   });
   const [isLoading, setIsLoading] = useState(true);
 
-  const fetchNutrition = useCallback(async () => {
+  const fetchNutrition = useCallback(async (showLoading = true) => {
     try {
-      setIsLoading(true);
+      if (showLoading) setIsLoading(true);
       const dateParam = date || new Date().toISOString().split('T')[0];
       const response = await fetch(`/api/food-log?date=${dateParam}`);
       if (!response.ok) throw new Error('Failed to fetch nutrition');
@@ -144,17 +144,38 @@ export function useNutritionData(date?: string) {
     fetchNutrition();
   }, [fetchNutrition]);
 
-  return { nutrition, isLoading, refetch: fetchNutrition };
+  // Add nutrition optimistically (called when adding food)
+  const addNutrition = useCallback((calories: number, protein: number, carbs: number, fat: number) => {
+    setNutrition(prev => ({
+      calories: { ...prev.calories, current: prev.calories.current + calories },
+      protein: { ...prev.protein, current: prev.protein.current + protein },
+      carbs: { ...prev.carbs, current: prev.carbs.current + carbs },
+      fat: { ...prev.fat, current: prev.fat.current + fat },
+    }));
+  }, []);
+
+  // Remove nutrition optimistically (called when deleting food)
+  const removeNutrition = useCallback((calories: number, protein: number, carbs: number, fat: number) => {
+    setNutrition(prev => ({
+      calories: { ...prev.calories, current: Math.max(0, prev.calories.current - calories) },
+      protein: { ...prev.protein, current: Math.max(0, prev.protein.current - protein) },
+      carbs: { ...prev.carbs, current: Math.max(0, prev.carbs.current - carbs) },
+      fat: { ...prev.fat, current: Math.max(0, prev.fat.current - fat) },
+    }));
+  }, []);
+
+  return { nutrition, isLoading, addNutrition, removeNutrition, refetch: fetchNutrition };
 }
 
-// Food Log Hook
+// Food Log Hook with Optimistic Updates
 export function useFoodLog(date?: string) {
   const [entries, setEntries] = useState<FoodLogEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSyncing, setIsSyncing] = useState(false);
 
-  const fetchEntries = useCallback(async () => {
+  const fetchEntries = useCallback(async (showLoading = true) => {
     try {
-      setIsLoading(true);
+      if (showLoading) setIsLoading(true);
       const dateParam = date || new Date().toISOString().split('T')[0];
       const response = await fetch(`/api/food-log?date=${dateParam}`);
       if (!response.ok) throw new Error('Failed to fetch food log');
@@ -164,6 +185,7 @@ export function useFoodLog(date?: string) {
       console.error('Error fetching food log:', err);
     } finally {
       setIsLoading(false);
+      setIsSyncing(false);
     }
   }, [date]);
 
@@ -171,7 +193,31 @@ export function useFoodLog(date?: string) {
     fetchEntries();
   }, [fetchEntries]);
 
+  // Optimistic add - updates UI immediately
   const addEntry = useCallback(async (entry: Partial<FoodLogEntry> & { foodName?: string }) => {
+    // Generate a temporary ID for the optimistic entry
+    const tempId = `temp-${Date.now()}`;
+    
+    // Create optimistic entry
+    const optimisticEntry: FoodLogEntry = {
+      id: tempId,
+      foodId: entry.foodId || null,
+      quantity: entry.quantity || 0,
+      unit: entry.unit || 'g',
+      calories: entry.calories || 0,
+      protein: entry.protein || 0,
+      carbs: entry.carbs || 0,
+      fat: entry.fat || 0,
+      source: entry.source || 'manual',
+      loggedAt: new Date().toISOString(),
+      rationale: entry.foodName ? `Food: ${entry.foodName}` : null,
+      food: entry.foodName ? { id: entry.foodId || 'unknown', name: entry.foodName } : null,
+    };
+    
+    // Optimistic update - instant UI response
+    setEntries(prev => [optimisticEntry, ...prev]);
+    
+    setIsSyncing(true);
     try {
       const response = await fetch('/api/food-log', {
         method: 'POST',
@@ -188,26 +234,70 @@ export function useFoodLog(date?: string) {
           source: entry.source,
         }),
       });
-      if (!response.ok) throw new Error('Failed to add entry');
-      await fetchEntries();
+      if (!response.ok) {
+        // Revert on failure
+        setEntries(prev => prev.filter(e => e.id !== tempId));
+        throw new Error('Failed to add entry');
+      }
+      // Silent refresh to sync with server
+      fetchEntries(false);
     } catch (err) {
       console.error('Error adding entry:', err);
+      throw err;
+    } finally {
+      setIsSyncing(false);
     }
   }, [fetchEntries]);
 
+  // Optimistic delete
   const deleteEntry = useCallback(async (id: string) => {
+    // Store the entry in case we need to restore it
+    const entryToRestore = entries.find(e => e.id === id);
+    
+    // Optimistic update - instant removal
+    setEntries(prev => prev.filter(e => e.id !== id));
+    
+    setIsSyncing(true);
     try {
       const response = await fetch(`/api/food-log?id=${id}`, {
         method: 'DELETE',
       });
-      if (!response.ok) throw new Error('Failed to delete entry');
-      await fetchEntries();
+      if (!response.ok) {
+        // Restore on failure
+        if (entryToRestore) {
+          setEntries(prev => [entryToRestore, ...prev]);
+        }
+        throw new Error('Failed to delete entry');
+      }
     } catch (err) {
       console.error('Error deleting entry:', err);
+      throw err;
+    } finally {
+      setIsSyncing(false);
     }
-  }, [fetchEntries]);
+  }, [entries, fetchEntries]);
 
+  // Optimistic update
   const updateEntry = useCallback(async (id: string, entry: Partial<FoodLogEntry> & { foodName?: string }) => {
+    // Store the original entry
+    const originalEntry = entries.find(e => e.id === id);
+    
+    // Optimistic update
+    setEntries(prev => prev.map(e => {
+      if (e.id !== id) return e;
+      return {
+        ...e,
+        quantity: entry.quantity ?? e.quantity,
+        unit: entry.unit ?? e.unit,
+        calories: entry.calories ?? e.calories,
+        protein: entry.protein ?? e.protein,
+        carbs: entry.carbs ?? e.carbs,
+        fat: entry.fat ?? e.fat,
+        source: entry.source ?? e.source,
+      };
+    }));
+    
+    setIsSyncing(true);
     try {
       const response = await fetch('/api/food-log', {
         method: 'PUT',
@@ -223,14 +313,23 @@ export function useFoodLog(date?: string) {
           source: entry.source,
         }),
       });
-      if (!response.ok) throw new Error('Failed to update entry');
-      await fetchEntries();
+      if (!response.ok) {
+        // Restore on failure
+        if (originalEntry) {
+          setEntries(prev => prev.map(e => e.id === id ? originalEntry : e));
+        }
+        throw new Error('Failed to update entry');
+      }
+      fetchEntries(false);
     } catch (err) {
       console.error('Error updating entry:', err);
+      throw err;
+    } finally {
+      setIsSyncing(false);
     }
-  }, [fetchEntries]);
+  }, [entries, fetchEntries]);
 
-  return { entries, isLoading, addEntry, updateEntry, deleteEntry, refetch: fetchEntries };
+  return { entries, isLoading, isSyncing, addEntry, updateEntry, deleteEntry, refetch: fetchEntries };
 }
 
 // Measurements Hook
@@ -427,10 +526,11 @@ export function useHydration(date?: string) {
     entries: [],
   });
   const [isLoading, setIsLoading] = useState(true);
+  const [isSyncing, setIsSyncing] = useState(false);
 
-  const fetchHydration = useCallback(async () => {
+  const fetchHydration = useCallback(async (showLoading = true) => {
     try {
-      setIsLoading(true);
+      if (showLoading) setIsLoading(true);
       const dateParam = date || new Date().toISOString().split('T')[0];
       const response = await fetch(`/api/measurements?type=water&date=${dateParam}`);
       if (!response.ok) throw new Error('Failed to fetch hydration');
@@ -460,6 +560,7 @@ export function useHydration(date?: string) {
       });
     } finally {
       setIsLoading(false);
+      setIsSyncing(false);
     }
   }, [date]);
 
@@ -467,7 +568,17 @@ export function useHydration(date?: string) {
     fetchHydration();
   }, [fetchHydration]);
 
+  // Optimistic add - updates UI immediately, syncs in background
   const addWater = useCallback(async (ml: number) => {
+    // Optimistic update - instant UI response
+    setHydration(prev => ({
+      ...prev,
+      current: prev.current + ml,
+      glasses: Math.floor((prev.current + ml) / 250),
+    }));
+    
+    // Sync in background
+    setIsSyncing(true);
     try {
       const response = await fetch('/api/measurements', {
         method: 'POST',
@@ -475,52 +586,98 @@ export function useHydration(date?: string) {
         body: JSON.stringify({ type: 'water', value: ml, unit: 'ml' }),
       });
       if (!response.ok) {
+        // Revert on failure
+        setHydration(prev => ({
+          ...prev,
+          current: prev.current - ml,
+          glasses: Math.floor((prev.current - ml) / 250),
+        }));
         const errorData = await response.json();
         throw new Error(errorData.error || 'Failed to add water');
       }
-      await fetchHydration();
+      // Silent refresh to sync entries list
+      fetchHydration(false);
     } catch (err) {
       console.error('Error adding water:', err);
-      throw err; // Re-throw to let the UI handle it
+      throw err;
+    } finally {
+      setIsSyncing(false);
     }
   }, [fetchHydration]);
 
+  // Optimistic remove
   const removeLastWater = useCallback(async () => {
+    const latestEntry = hydration.entries[0];
+    if (!latestEntry) return;
+    
+    // Optimistic update
+    setHydration(prev => ({
+      ...prev,
+      current: Math.max(0, prev.current - latestEntry.value),
+      glasses: Math.floor(Math.max(0, prev.current - latestEntry.value) / 250),
+    }));
+    
+    setIsSyncing(true);
     try {
-      // Get the latest water entry (most recent)
-      const latestEntry = hydration.entries[0];
-      if (!latestEntry) return;
-      
       const response = await fetch(`/api/measurements?id=${latestEntry.id}`, {
         method: 'DELETE',
       });
       if (!response.ok) {
+        // Revert on failure
+        setHydration(prev => ({
+          ...prev,
+          current: prev.current + latestEntry.value,
+          glasses: Math.floor((prev.current + latestEntry.value) / 250),
+        }));
         const errorData = await response.json();
         throw new Error(errorData.error || 'Failed to remove water');
       }
-      await fetchHydration();
+      fetchHydration(false);
     } catch (err) {
       console.error('Error removing water:', err);
       throw err;
+    } finally {
+      setIsSyncing(false);
     }
   }, [fetchHydration, hydration.entries]);
 
+  // Optimistic clear
   const clearAllWater = useCallback(async () => {
+    const previousCurrent = hydration.current;
+    const previousEntries = hydration.entries;
+    
+    // Optimistic update - instant clear
+    setHydration(prev => ({
+      ...prev,
+      current: 0,
+      glasses: 0,
+      entries: [],
+    }));
+    
+    setIsSyncing(true);
     try {
       const dateParam = date || new Date().toISOString().split('T')[0];
       const response = await fetch(`/api/measurements?type=water&date=${dateParam}`, {
         method: 'DELETE',
       });
       if (!response.ok) {
+        // Revert on failure
+        setHydration(prev => ({
+          ...prev,
+          current: previousCurrent,
+          glasses: Math.floor(previousCurrent / 250),
+          entries: previousEntries,
+        }));
         const errorData = await response.json();
         throw new Error(errorData.error || 'Failed to clear water');
       }
-      await fetchHydration();
     } catch (err) {
       console.error('Error clearing water:', err);
       throw err;
+    } finally {
+      setIsSyncing(false);
     }
-  }, [fetchHydration, date]);
+  }, [fetchHydration, date, hydration.current, hydration.entries]);
 
   const updateTarget = useCallback((newTarget: number) => {
     // Clamp target between 500ml and 5000ml
@@ -532,5 +689,5 @@ export function useHydration(date?: string) {
     }));
   }, []);
 
-  return { hydration, isLoading, addWater, removeLastWater, clearAllWater, updateTarget, refetch: fetchHydration };
+  return { hydration, isLoading, isSyncing, addWater, removeLastWater, clearAllWater, updateTarget, refetch: fetchHydration };
 }
