@@ -1,0 +1,21 @@
+{
+  "name": "Progress Companion",
+  "short_name": "Progress",
+  "description": "Your AI fitness companion - Photo-first, privacy-first, explainable",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#10b981",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["health", "fitness", "lifestyle"],
+  "screenshots": [],
+  "prefer_related_applications": false
+}

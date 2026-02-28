@@ -41,82 +41,367 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
+  
+  /* Fitness App Custom Colors */
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-info: var(--info);
+  --color-aura-positive: var(--aura-positive);
+  --color-aura-neutral: var(--aura-neutral);
+  --color-aura-negative: var(--aura-negative);
+  --color-confidence-high: var(--confidence-high);
+  --color-confidence-medium: var(--confidence-medium);
+  --color-confidence-low: var(--confidence-low);
+  --color-protein: var(--protein);
+  --color-carbs: var(--carbs);
+  --color-fat: var(--fat);
+  --color-calories: var(--calories);
 }
 
 :root {
-  --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
+  --radius: 1rem;
+  --background: oklch(0.99 0.002 240);
+  --foreground: oklch(0.15 0.01 240);
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
+  --card-foreground: oklch(0.15 0.01 240);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --popover-foreground: oklch(0.15 0.01 240);
+  --primary: oklch(0.25 0.02 240);
+  --primary-foreground: oklch(0.98 0 0);
+  --secondary: oklch(0.96 0.005 240);
+  --secondary-foreground: oklch(0.25 0.02 240);
+  --muted: oklch(0.96 0.005 240);
+  --muted-foreground: oklch(0.5 0.01 240);
+  --accent: oklch(0.94 0.02 160);
+  --accent-foreground: oklch(0.2 0.02 160);
+  --destructive: oklch(0.55 0.22 25);
+  --border: oklch(0.92 0.005 240);
+  --input: oklch(0.92 0.005 240);
+  --ring: oklch(0.6 0.15 160);
+  
+  /* Chart colors - nature-inspired palette */
+  --chart-1: oklch(0.65 0.18 160);
+  --chart-2: oklch(0.6 0.15 200);
+  --chart-3: oklch(0.55 0.12 280);
+  --chart-4: oklch(0.7 0.18 80);
+  --chart-5: oklch(0.6 0.2 30);
+  
+  /* Sidebar */
+  --sidebar: oklch(0.98 0.002 240);
+  --sidebar-foreground: oklch(0.15 0.01 240);
+  --sidebar-primary: oklch(0.25 0.02 240);
+  --sidebar-primary-foreground: oklch(0.98 0 0);
+  --sidebar-accent: oklch(0.94 0.02 160);
+  --sidebar-accent-foreground: oklch(0.2 0.02 160);
+  --sidebar-border: oklch(0.92 0.005 240);
+  --sidebar-ring: oklch(0.6 0.15 160);
+  
+  /* Fitness-specific colors */
+  --success: oklch(0.65 0.18 160);
+  --warning: oklch(0.75 0.18 80);
+  --info: oklch(0.6 0.15 200);
+  
+  /* Progress Aura colors */
+  --aura-positive: oklch(0.65 0.18 160);
+  --aura-neutral: oklch(0.7 0.1 80);
+  --aura-negative: oklch(0.6 0.18 30);
+  
+  /* Confidence colors */
+  --confidence-high: oklch(0.65 0.18 160);
+  --confidence-medium: oklch(0.75 0.18 80);
+  --confidence-low: oklch(0.6 0.18 30);
+  
+  /* Macro colors */
+  --protein: oklch(0.55 0.2 160);
+  --carbs: oklch(0.65 0.18 80);
+  --fat: oklch(0.6 0.18 30);
+  --calories: oklch(0.55 0.15 200);
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --background: oklch(0.12 0.01 240);
+  --foreground: oklch(0.96 0.005 240);
+  --card: oklch(0.17 0.015 240);
+  --card-foreground: oklch(0.96 0.005 240);
+  --popover: oklch(0.17 0.015 240);
+  --popover-foreground: oklch(0.96 0.005 240);
+  --primary: oklch(0.92 0.01 240);
+  --primary-foreground: oklch(0.12 0.01 240);
+  --secondary: oklch(0.22 0.015 240);
+  --secondary-foreground: oklch(0.92 0.01 240);
+  --muted: oklch(0.22 0.015 240);
+  --muted-foreground: oklch(0.65 0.01 240);
+  --accent: oklch(0.25 0.04 160);
+  --accent-foreground: oklch(0.92 0.01 160);
+  --destructive: oklch(0.65 0.22 25);
+  --border: oklch(1 0 0 / 8%);
+  --input: oklch(1 0 0 / 12%);
+  --ring: oklch(0.6 0.15 160);
+  
+  /* Chart colors - dark mode */
+  --chart-1: oklch(0.7 0.18 160);
+  --chart-2: oklch(0.65 0.15 200);
+  --chart-3: oklch(0.6 0.12 280);
+  --chart-4: oklch(0.75 0.18 80);
+  --chart-5: oklch(0.65 0.2 30);
+  
+  /* Sidebar */
+  --sidebar: oklch(0.15 0.015 240);
+  --sidebar-foreground: oklch(0.96 0.005 240);
+  --sidebar-primary: oklch(0.92 0.01 240);
+  --sidebar-primary-foreground: oklch(0.12 0.01 240);
+  --sidebar-accent: oklch(0.25 0.04 160);
+  --sidebar-accent-foreground: oklch(0.92 0.01 160);
+  --sidebar-border: oklch(1 0 0 / 8%);
+  --sidebar-ring: oklch(0.6 0.15 160);
+  
+  /* Fitness-specific colors - dark mode */
+  --success: oklch(0.7 0.18 160);
+  --warning: oklch(0.78 0.18 80);
+  --info: oklch(0.65 0.15 200);
+  --aura-positive: oklch(0.7 0.18 160);
+  --aura-neutral: oklch(0.75 0.1 80);
+  --aura-negative: oklch(0.65 0.18 30);
+  --confidence-high: oklch(0.7 0.18 160);
+  --confidence-medium: oklch(0.78 0.18 80);
+  --confidence-low: oklch(0.65 0.18 30);
+  --protein: oklch(0.6 0.2 160);
+  --carbs: oklch(0.7 0.18 80);
+  --fat: oklch(0.65 0.18 30);
+  --calories: oklch(0.6 0.15 200);
 }
 
 @layer base {
   * {
     @apply border-border outline-ring/50;
+    -webkit-tap-highlight-color: transparent;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "rlig" 1, "calt" 1;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
   }
+}
+
+/* iOS Safe Area */
+.ios-safe-area {
+  padding-top: env(safe-area-inset-top, 0);
+  padding-bottom: env(safe-area-inset-bottom, 0);
+  padding-left: env(safe-area-inset-left, 0);
+  padding-right: env(safe-area-inset-right, 0);
+}
+
+/* iOS Smooth Scrolling */
+.overflow-y-auto {
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
+
+/* Hide scrollbar on iOS */
+.overflow-y-auto::-webkit-scrollbar {
+  display: none;
+}
+
+.overflow-y-auto {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* iOS Touch Manipulation */
+.touch-manipulation {
+  touch-action: manipulation;
+}
+
+/* iOS Selection */
+::selection {
+  background: oklch(0.6 0.15 160 / 30%);
+}
+
+/* Custom scrollbar styling for desktop */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: oklch(0.7 0.01 240);
+  border-radius: 3px;
+}
+
+.dark .custom-scrollbar::-webkit-scrollbar-thumb {
+  background: oklch(0.35 0.01 240);
+}
+
+/* Progress Aura animation */
+@keyframes aura-pulse {
+  0%, 100% {
+    opacity: 0.6;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+}
+
+.aura-animate {
+  animation: aura-pulse 3s ease-in-out infinite;
+}
+
+/* Gradient text */
+.gradient-text {
+  background: linear-gradient(135deg, var(--accent-foreground) 0%, var(--chart-1) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Glass morphism effect */
+.glass {
+  background: oklch(1 0 0 / 70%);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.dark .glass {
+  background: oklch(0.17 0.015 240 / 70%);
+}
+
+/* Smooth transitions */
+.transition-smooth {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* 3D Card effect */
+.card-3d {
+  transform-style: preserve-3d;
+  perspective: 1000px;
+}
+
+.card-3d:hover {
+  transform: translateY(-2px);
+}
+
+/* Skeleton animation */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.skeleton-shimmer {
+  background: linear-gradient(90deg, var(--muted) 25%, var(--secondary) 50%, var(--muted) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* Progress ring animation */
+@keyframes ring-progress {
+  from {
+    stroke-dashoffset: 100;
+  }
+}
+
+/* Morph transition */
+.morph-transition {
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Confidence badge colors */
+.confidence-high { color: var(--confidence-high); }
+.confidence-medium { color: var(--confidence-medium); }
+.confidence-low { color: var(--confidence-low); }
+
+.bg-confidence-high { background-color: var(--confidence-high); }
+.bg-confidence-medium { background-color: var(--confidence-medium); }
+.bg-confidence-low { background-color: var(--confidence-low); }
+
+/* Macro colors */
+.text-protein { color: var(--protein); }
+.text-carbs { color: var(--carbs); }
+.text-fat { color: var(--fat); }
+.text-calories { color: var(--calories); }
+
+.bg-protein { background-color: var(--protein); }
+.bg-carbs { background-color: var(--carbs); }
+.bg-fat { background-color: var(--fat); }
+.bg-calories { background-color: var(--calories); }
+
+/* Hide scrollbar but keep functionality */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Focus ring for accessibility */
+.focus-ring:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+/* Safe area for mobile */
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0);
+}
+
+.safe-top {
+  padding-top: env(safe-area-inset-top, 0);
+}
+
+/* iOS-style active states */
+button:active:not(:disabled) {
+  transform: scale(0.98);
+  opacity: 0.9;
+}
+
+/* iOS-style input focus */
+input:focus, textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+/* Prevent text selection on interactive elements */
+button, [role="button"] {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* iOS rubber banding fix */
+html, body {
+  overscroll-behavior: none;
+}
+
+/* Card hover effect */
+.card-hover {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card-hover:active {
+  transform: scale(0.98);
+}
+
+/* Bottom sheet drag indicator */
+.drag-indicator {
+  width: 36px;
+  height: 5px;
+  background: oklch(0.7 0.01 240);
+  border-radius: 2.5px;
+  margin: 8px auto;
+}
+
+.dark .drag-indicator {
+  background: oklch(0.4 0.01 240);
 }
