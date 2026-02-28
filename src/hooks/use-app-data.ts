@@ -385,6 +385,7 @@ export interface HydrationData {
   current: number; // ml
   target: number; // ml
   glasses: number; // number of 250ml glasses
+  entries: Measurement[]; // water measurement entries
 }
 
 export function useHydration(date?: string) {
@@ -392,6 +393,7 @@ export function useHydration(date?: string) {
     current: 0,
     target: DEFAULT_TARGETS.water,
     glasses: 0,
+    entries: [],
   });
   const [isLoading, setIsLoading] = useState(true);
 
@@ -411,6 +413,7 @@ export function useHydration(date?: string) {
         current: totalWater,
         target: DEFAULT_TARGETS.water,
         glasses: Math.floor(totalWater / 250),
+        entries: measurements,
       });
     } catch (err) {
       console.error('Error fetching hydration:', err);
@@ -419,6 +422,7 @@ export function useHydration(date?: string) {
         current: 0,
         target: DEFAULT_TARGETS.water,
         glasses: 0,
+        entries: [],
       });
     } finally {
       setIsLoading(false);
@@ -447,5 +451,42 @@ export function useHydration(date?: string) {
     }
   }, [fetchHydration]);
 
-  return { hydration, isLoading, addWater, refetch: fetchHydration };
+  const removeLastWater = useCallback(async () => {
+    try {
+      // Get the latest water entry (most recent)
+      const latestEntry = hydration.entries[0];
+      if (!latestEntry) return;
+      
+      const response = await fetch(`/api/measurements?id=${latestEntry.id}`, {
+        method: 'DELETE',
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to remove water');
+      }
+      await fetchHydration();
+    } catch (err) {
+      console.error('Error removing water:', err);
+      throw err;
+    }
+  }, [fetchHydration, hydration.entries]);
+
+  const clearAllWater = useCallback(async () => {
+    try {
+      const dateParam = date || new Date().toISOString().split('T')[0];
+      const response = await fetch(`/api/measurements?type=water&date=${dateParam}`, {
+        method: 'DELETE',
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to clear water');
+      }
+      await fetchHydration();
+    } catch (err) {
+      console.error('Error clearing water:', err);
+      throw err;
+    }
+  }, [fetchHydration, date]);
+
+  return { hydration, isLoading, addWater, removeLastWater, clearAllWater, refetch: fetchHydration };
 }

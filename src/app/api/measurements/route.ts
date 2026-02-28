@@ -109,3 +109,46 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Failed to create measurement' }, { status: 500 });
   }
 }
+
+// DELETE /api/measurements - Delete a measurement
+export async function DELETE(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
+    const type = searchParams.get('type');
+    const date = searchParams.get('date');
+
+    // If id is provided, delete by ID
+    if (id) {
+      await db.measurement.delete({
+        where: { id },
+      });
+      return NextResponse.json({ success: true });
+    }
+
+    // If type and date are provided, delete all measurements of that type for that date
+    if (type && date) {
+      const targetDate = new Date(date);
+      const startOfDay = new Date(targetDate);
+      startOfDay.setHours(0, 0, 0, 0);
+      const endOfDay = new Date(targetDate);
+      endOfDay.setHours(23, 59, 59, 999);
+
+      const result = await db.measurement.deleteMany({
+        where: {
+          measurementType: type,
+          capturedAt: {
+            gte: startOfDay,
+            lte: endOfDay,
+          },
+        },
+      });
+      return NextResponse.json({ success: true, count: result.count });
+    }
+
+    return NextResponse.json({ error: 'Either id or both type and date are required' }, { status: 400 });
+  } catch (error) {
+    console.error('Error deleting measurement:', error);
+    return NextResponse.json({ error: 'Failed to delete measurement' }, { status: 500 });
+  }
+}

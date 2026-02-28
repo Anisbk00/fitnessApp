@@ -215,18 +215,45 @@ function HydrationTracker({
   current,
   target,
   onAddWater,
+  onRemoveWater,
+  onClearWater,
+  entries,
 }: {
   current: number;
   target: number;
   onAddWater: (ml: number) => Promise<void>;
+  onRemoveWater: () => Promise<void>;
+  onClearWater: () => Promise<void>;
+  entries: { id: string; value: number; capturedAt: string }[];
 }) {
   const [isAdding, setIsAdding] = React.useState(false);
+  const [showActions, setShowActions] = React.useState(false);
   const isExceeded = current > target;
 
   const handleAddWater = async (ml: number) => {
     setIsAdding(true);
     try {
       await onAddWater(ml);
+    } finally {
+      setIsAdding(false);
+    }
+  };
+
+  const handleRemoveWater = async () => {
+    setIsAdding(true);
+    try {
+      await onRemoveWater();
+      setShowActions(false);
+    } finally {
+      setIsAdding(false);
+    }
+  };
+
+  const handleClearWater = async () => {
+    setIsAdding(true);
+    try {
+      await onClearWater();
+      setShowActions(false);
     } finally {
       setIsAdding(false);
     }
@@ -250,13 +277,23 @@ function HydrationTracker({
           <Droplets className={cn("w-5 h-5", isExceeded ? "text-rose-500" : "text-cyan-500")} />
           <span className="font-medium">Hydration</span>
         </div>
-        <span className={cn(
-          "text-sm",
-          isExceeded ? "text-rose-500 font-medium" : "text-muted-foreground"
-        )}>
-          {Math.round(current)} / {target} ml
-          {isExceeded && " ⚠️"}
-        </span>
+        <div className="flex items-center gap-2">
+          <span className={cn(
+            "text-sm",
+            isExceeded ? "text-rose-500 font-medium" : "text-muted-foreground"
+          )}>
+            {Math.round(current)} / {target} ml
+            {isExceeded && " ⚠️"}
+          </span>
+          {entries.length > 0 && (
+            <button
+              onClick={() => setShowActions(!showActions)}
+              className="w-6 h-6 rounded-full bg-muted flex items-center justify-center"
+            >
+              <span className="text-xs text-muted-foreground">{entries.length}</span>
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Glass indicators */}
@@ -289,6 +326,35 @@ function HydrationTracker({
           );
         })}
       </div>
+
+      {/* Action buttons (undo/clear) */}
+      <AnimatePresence>
+        {showActions && entries.length > 0 && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            className="overflow-hidden mb-3"
+          >
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleRemoveWater}
+                disabled={isAdding}
+                className="flex-1 py-2 px-3 rounded-xl text-sm font-medium bg-amber-500/20 text-amber-600 dark:text-amber-400 hover:bg-amber-500/30 transition-colors touch-manipulation disabled:opacity-50"
+              >
+                Undo Last
+              </button>
+              <button
+                onClick={handleClearWater}
+                disabled={isAdding}
+                className="flex-1 py-2 px-3 rounded-xl text-sm font-medium bg-rose-500/20 text-rose-600 dark:text-rose-400 hover:bg-rose-500/30 transition-colors touch-manipulation disabled:opacity-50"
+              >
+                Clear All
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Quick add buttons */}
       <div className="flex items-center gap-2">
@@ -1012,7 +1078,7 @@ export function FoodsPage() {
   // Hooks
   const { nutrition, refetch: refetchNutrition } = useNutritionData();
   const { entries, addEntry, deleteEntry, refetch: refetchFoodLog } = useFoodLog();
-  const { hydration, addWater, refetch: refetchHydration } = useHydration();
+  const { hydration, addWater, removeLastWater, clearAllWater, refetch: refetchHydration } = useHydration();
 
   // Refetch all data
   const refetchAll = useCallback(async () => {
@@ -1155,6 +1221,9 @@ export function FoodsPage() {
           current={hydration.current}
           target={hydration.target}
           onAddWater={handleAddWater}
+          onRemoveWater={removeLastWater}
+          onClearWater={clearAllWater}
+          entries={hydration.entries}
         />
       </div>
 
