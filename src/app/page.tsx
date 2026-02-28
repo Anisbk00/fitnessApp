@@ -60,6 +60,7 @@ import { ProvenanceTag } from "@/components/fitness/provenance-tag";
 import { NutritionRing } from "@/components/fitness/nutrition-ring";
 import { OnboardingFlow, type OnboardingData } from "@/components/fitness/onboarding-flow";
 import { AnalyticsPage } from "@/components/fitness/analytics-page";
+import { FoodsPage } from "@/components/fitness/foods-page";
 import { useChat, useInsights, useSignalComposer } from "@/hooks/use-api";
 import { format, subDays, addDays, isToday, isYesterday, startOfWeek, differenceInDays } from "date-fns";
 import { useTheme } from "next-themes";
@@ -464,13 +465,9 @@ export default function ProgressCompanionHome() {
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -20 }}
                 transition={{ duration: 0.2 }}
-                className="px-4 py-4"
+                className="h-full overflow-y-auto"
               >
-                <div className="text-center py-12">
-                  <Utensils className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-                  <h2 className="text-xl font-bold mb-2">Foods</h2>
-                  <p className="text-muted-foreground">Food tracking coming soon</p>
-                </div>
+                <FoodsPage />
               </motion.div>
             )}
             
