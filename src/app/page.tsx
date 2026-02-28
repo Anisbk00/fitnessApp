@@ -34,6 +34,7 @@ import { OnboardingFlow, type OnboardingData } from "@/components/fitness/onboar
 import { AnalyticsPage } from "@/components/fitness/analytics-page";
 import { FoodsPage } from "@/components/fitness/foods-page";
 import { ProfilePage } from "@/components/fitness/profile-page";
+import { BodyCompositionPage } from "@/components/fitness/body-composition-page";
 import { useUserData, useNutritionData, useFoodLog, useMeasurements } from "@/hooks/use-app-data";
 import { format, subDays, isToday } from "date-fns";
 import { useTheme } from "next-themes";
@@ -165,7 +166,7 @@ export default function ProgressCompanionHome() {
   const tabs = [
     { id: 'home', label: 'Home', icon: Home },
     { id: 'foods', label: 'Foods', icon: Utensils },
-    { id: 'analytics', label: 'Analytics', icon: BarChart3 },
+    { id: 'body', label: 'Body AI', icon: Activity },
     { id: 'profile', label: 'Profile', icon: User },
   ];
   
@@ -274,15 +275,15 @@ export default function ProgressCompanionHome() {
             </motion.div>
           )}
           
-          {activeTab === 'analytics' && (
+          {activeTab === 'body' && (
             <motion.div
-              key="analytics"
+              key="body"
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
               className="px-4 py-4"
             >
-              <AnalyticsPage />
+              <BodyCompositionPage />
             </motion.div>
           )}
           

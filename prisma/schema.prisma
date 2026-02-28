@@ -40,6 +40,7 @@ model User {
   devices       WearableDevice[]
   badges        UserBadge[]
   settings      UserSettings?
+  bodyCompositionScans BodyCompositionScan[]
 }
 
 model UserProfile {
@@ -520,4 +521,90 @@ model UserBadge {
   isDisplayed     Boolean  @default(true)
   
   createdAt       DateTime @default(now())
+}
+
+// ============================================================================
+// AI BODY COMPOSITION INTELLIGENCE SYSTEM
+// ============================================================================
+
+model BodyCompositionScan {
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Photo references (front, side, back poses)
+  frontPhotoUrl   String
+  sidePhotoUrl    String?
+  backPhotoUrl    String?
+  thumbnailUrl    String?
+  
+  // Capture conditions
+  capturedAt      DateTime @default(now())
+  lighting        String   @default("moderate") // good, moderate, poor
+  poseAlignment   Float    @default(0.5)  // 0-1 score for pose quality
+  clothing        String   @default("light") // minimal, light, heavy
+  fastedState     Boolean?
+  timeOfDay       String?  // morning, afternoon, evening
+  
+  // Core Estimations (with confidence intervals)
+  bodyFatMin      Float    // Lower bound of estimate
+  bodyFatMax      Float    // Upper bound of estimate
+  bodyFatConfidence Float  // 0-100 confidence score
+  
+  leanMassMin     Float?
+  leanMassMax     Float?
+  leanMassConfidence Float?
+  
+  fatMassMin      Float?
+  fatMassMax      Float?
+  fatMassConfidence Float?
+  
+  // Advanced Segmental Analysis (optional)
+  upperBodyFat    Float?   // Segmental estimate
+  lowerBodyFat    Float?
+  abdominalFat    Float?
+  segmentalConfidence Float?
+  
+  // Muscle Analysis
+  muscleFullness  Float?   // 0-100 score
+  definition      Float?   // 0-100 score
+  symmetryScore   Float?   // 0-100 score
+  
+  // Change Detection (computed from previous scan)
+  bodyFatChange   Float?   // Change from last scan
+  leanMassChange  Float?
+  changeDirection String?  // improving, stable, declining
+  changeConfidence Float?
+  
+  // AI Commentary
+  aiCommentary    String?  // Scientific, neutral tone analysis
+  trendInsight    String?  // Monthly trend observation
+  
+  // Environmental Quality Scores
+  photoClarity    Float    @default(0.5)
+  lightingQuality Float    @default(0.5)
+  poseQuality     Float    @default(0.5)
+  dataCompleteness Float   @default(0.5)  // How complete is user's profile data
+  
+  // Model Information
+  modelVersion    String   @default("v1.0")
+  processingTime  Int?     // milliseconds
+  
+  // Behavioral Context (snapshot at scan time)
+  avgCalories     Float?   // 7-day average
+  avgProtein      Float?   // 7-day average
+  weightTrend     String?  // up, down, stable
+  trainingVolume  Float?   // Weekly volume
+  
+  // Safety Flags
+  rapidChangeDetected Boolean @default(false)
+  unhealthyTrend      Boolean @default(false)
+  safetyAlert         String?
+  
+  // Privacy
+  isPrivate       Boolean  @default(true)
+  encrypted       Boolean  @default(true)
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 }
