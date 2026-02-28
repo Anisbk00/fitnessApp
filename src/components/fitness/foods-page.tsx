@@ -528,6 +528,9 @@ function FoodDetailSheet({
   return (
     <Sheet open={open} onOpenChange={onClose}>
       <SheetContent side="bottom" className="rounded-t-3xl px-0 max-h-[90vh]">
+        <SheetHeader className="sr-only">
+          <SheetTitle>{food.nameEn}</SheetTitle>
+        </SheetHeader>
         <div className="h-1 w-12 bg-muted rounded-full mx-auto mt-2 mb-4" />
         
         {/* Hero */}
@@ -537,7 +540,7 @@ function FoodDetailSheet({
         )}>
           <div className="text-4xl mb-3">{category.icon}</div>
           <h2 className="text-xl font-bold">{food.nameEn}</h2>
-          <p className="text-sm opacity-80 mt-1">{food.nameAr}</p>
+          {food.nameAr && <p className="text-sm opacity-80 mt-1">{food.nameAr}</p>}
           <div className="flex items-center gap-2 mt-3">
             <ConfidenceBadge confidence={food.confidence} size="sm" />
             {food.origin === "tunisian" && (
