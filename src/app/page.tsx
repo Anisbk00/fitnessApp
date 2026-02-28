@@ -247,8 +247,8 @@ export default function ProgressCompanionHome() {
   const [pullDistance, setPullDistance] = useState(0);
   const [activeTab, setActiveTab] = useState('home');
   
-  // Onboarding State
-  const [showOnboarding, setShowOnboarding] = useState(true);
+  // Onboarding State - Skip onboarding by default for testing
+  const [showOnboarding, setShowOnboarding] = useState(false);
   const [onboardingData, setOnboardingData] = useState<OnboardingData | null>(null);
   
   // Sheet States

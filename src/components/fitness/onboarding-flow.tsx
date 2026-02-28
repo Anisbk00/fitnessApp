@@ -1537,6 +1537,15 @@ export function OnboardingFlow({
     }
   }, [handleNext, handleBack]);
 
+  // Reset onboarding (for testing)
+  const handleReset = useCallback(() => {
+    clearLocalStorage();
+    setCurrentScreen(0);
+    setData(defaultOnboardingData);
+    setIsCompleted(false);
+    setShowPostOnboarding(false);
+  }, []);
+
   // If already completed, don't show
   if (isCompleted && !forceShow) {
     return null;
@@ -1558,7 +1567,7 @@ export function OnboardingFlow({
   };
 
   return (
-    <div className="fixed inset-0 bg-background z-50 ios-safe-area">
+    <div className="fixed inset-0 bg-background z-50 ios-safe-area flex flex-col">
       {/* iOS Status Bar Spacer */}
       <div className="h-[env(safe-area-inset-top,20px)] bg-background flex-shrink-0" />
 
@@ -1586,14 +1595,8 @@ export function OnboardingFlow({
         </motion.button>
       )}
 
-      {/* Main Content Area */}
-      <motion.div
-        className="flex-1 overflow-hidden"
-        drag="x"
-        dragConstraints={{ left: 0, right: 0 }}
-        dragElastic={0.2}
-        onDragEnd={handleDragEnd}
-      >
+      {/* Main Content Area - Scrollable */}
+      <div className="flex-1 overflow-hidden">
         <AnimatePresence mode="wait" custom={direction}>
           {currentScreen === 0 && (
             <motion.div
@@ -1709,10 +1712,10 @@ export function OnboardingFlow({
             </motion.div>
           )}
         </AnimatePresence>
-      </motion.div>
+      </div>
 
       {/* Page Indicator */}
-      <div className="absolute bottom-8 left-0 right-0">
+      <div className="pb-4">
         <PageIndicator 
           current={currentScreen} 
           total={totalScreens}
