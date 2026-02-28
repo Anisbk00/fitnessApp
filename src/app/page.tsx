@@ -59,6 +59,7 @@ import { ConfidenceBadge } from "@/components/fitness/confidence-badge";
 import { ProvenanceTag } from "@/components/fitness/provenance-tag";
 import { NutritionRing } from "@/components/fitness/nutrition-ring";
 import { OnboardingFlow, type OnboardingData } from "@/components/fitness/onboarding-flow";
+import { AnalyticsPage } from "@/components/fitness/analytics-page";
 import { useChat, useInsights, useSignalComposer } from "@/hooks/use-api";
 import { format, subDays, addDays, isToday, isYesterday, startOfWeek, differenceInDays } from "date-fns";
 import { useTheme } from "next-themes";
@@ -388,6 +389,15 @@ export default function ProgressCompanionHome() {
 
         {/* Scrollable Content */}
         <div className="h-full overflow-y-auto pb-28 -webkit-overflow-scrolling-touch scrollbar-hide">
+          <AnimatePresence mode="wait">
+            {activeTab === 'home' && (
+              <motion.div
+                key="home"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 20 }}
+                transition={{ duration: 0.2 }}
+              >
           {/* Dynamic Header */}
           <DynamicHeader 
             user={mockUser} 
@@ -431,6 +441,56 @@ export default function ProgressCompanionHome() {
             weeklyData={mockUser.weeklyData}
             onTap={() => setAnalyticsSheetOpen(true)}
           />
+              </motion.div>
+            )}
+            
+            {activeTab === 'analytics' && (
+              <motion.div
+                key="analytics"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                transition={{ duration: 0.2 }}
+                className="px-4 py-4"
+              >
+                <AnalyticsPage />
+              </motion.div>
+            )}
+            
+            {activeTab === 'foods' && (
+              <motion.div
+                key="foods"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                transition={{ duration: 0.2 }}
+                className="px-4 py-4"
+              >
+                <div className="text-center py-12">
+                  <Utensils className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+                  <h2 className="text-xl font-bold mb-2">Foods</h2>
+                  <p className="text-muted-foreground">Food tracking coming soon</p>
+                </div>
+              </motion.div>
+            )}
+            
+            {activeTab === 'profile' && (
+              <motion.div
+                key="profile"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                transition={{ duration: 0.2 }}
+                className="px-4 py-4"
+              >
+                <div className="text-center py-12">
+                  <User className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+                  <h2 className="text-xl font-bold mb-2">Profile</h2>
+                  <p className="text-muted-foreground">Profile settings coming soon</p>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </motion.div>
 
