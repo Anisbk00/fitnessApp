@@ -1,0 +1,1894 @@
+{
+  "config": {
+    "configFile": "/home/z/my-project/playwright.config.ts",
+    "rootDir": "/home/z/my-project/tests",
+    "forbidOnly": false,
+    "fullyParallel": true,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {},
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "/home/z/my-project/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {},
+        "id": "chromium",
+        "name": "chromium",
+        "testDir": "/home/z/my-project/tests",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      },
+      {
+        "outputDir": "/home/z/my-project/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {},
+        "id": "Mobile Chrome",
+        "name": "Mobile Chrome",
+        "testDir": "/home/z/my-project/tests",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "list",
+        null
+      ],
+      [
+        "html",
+        {
+          "outputFolder": "tests/reports/html"
+        }
+      ],
+      [
+        "json",
+        {
+          "outputFile": "tests/reports/results.json"
+        }
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "runAgents": "none",
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.58.2",
+    "workers": 4,
+    "webServer": {
+      "command": "echo \"Server already running\"",
+      "url": "http://localhost:3000",
+      "reuseExistingServer": true,
+      "timeout": 120000
+    }
+  },
+  "suites": [
+    {
+      "title": "e2e/foods.spec.ts",
+      "file": "e2e/foods.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "A. Functional Correctness",
+          "file": "e2e/foods.spec.ts",
+          "line": 243,
+          "column": 6,
+          "specs": [
+            {
+              "title": "A.1 - Foods page loads with correct structure",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "30f567a2a73ba42c02b6-9403c287517fce74e22d",
+              "file": "e2e/foods.spec.ts",
+              "line": 245,
+              "column": 7
+            },
+            {
+              "title": "A.2 - Calorie ring displays correctly",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "30f567a2a73ba42c02b6-32c8df5b90c7833c4b7e",
+              "file": "e2e/foods.spec.ts",
+              "line": 269,
+              "column": 7
+            },
+            {
+              "title": "A.3 - Meal cards display and expand",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "30f567a2a73ba42c02b6-9cee97f1a26e076ecc7b",
+              "file": "e2e/foods.spec.ts",
+              "line": 290,
+              "column": 7
+            },
+            {
+              "title": "A.4 - Hydration tracker functions",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "30f567a2a73ba42c02b6-e0551925f62f28f16d95",
+              "file": "e2e/foods.spec.ts",
+              "line": 318,
+              "column": 7
+            },
+            {
+              "title": "A.5 - Food search functionality",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "30f567a2a73ba42c02b6-585c36033504fa628e80",
+              "file": "e2e/foods.spec.ts",
+              "line": 345,
+              "column": 7
+            },
+            {
+              "title": "A.6 - Barcode scanner button available",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "30f567a2a73ba42c02b6-17a55a5bff287147476e",
+              "file": "e2e/foods.spec.ts",
+              "line": 376,
+              "column": 7
+            },
+            {
+              "title": "A.7 - Quick add dialog functions",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "30f567a2a73ba42c02b6-de92dd8807bdabd8ecf6",
+              "file": "e2e/foods.spec.ts",
+              "line": 399,
+              "column": 7
+            },
+            {
+              "title": "A.8 - Edit food entry",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "30f567a2a73ba42c02b6-e160d270a80affe7e2b4",
+              "file": "e2e/foods.spec.ts",
+              "line": 444,
+              "column": 7
+            },
+            {
+              "title": "A.9 - Delete food entry",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "30f567a2a73ba42c02b6-616b6e37b236d4607dab",
+              "file": "e2e/foods.spec.ts",
+              "line": 495,
+              "column": 7
+            },
+            {
+              "title": "A.10 - Water target adjustment",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "30f567a2a73ba42c02b6-dfd15b29ba70d9f1c8c7",
+              "file": "e2e/foods.spec.ts",
+              "line": 536,
+              "column": 7
+            },
+            {
+              "title": "A.1 - Foods page loads with correct structure",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Mobile Chrome",
+                  "projectName": "Mobile Chrome",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "30f567a2a73ba42c02b6-6e22f363deb3166f0d18",
+              "file": "e2e/foods.spec.ts",
+              "line": 245,
+              "column": 7
+            },
+            {
+              "title": "A.2 - Calorie ring displays correctly",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Mobile Chrome",
+                  "projectName": "Mobile Chrome",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "30f567a2a73ba42c02b6-3824118e65270dcc3cf3",
+              "file": "e2e/foods.spec.ts",
+              "line": 269,
+              "column": 7
+            },
+            {
+              "title": "A.3 - Meal cards display and expand",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Mobile Chrome",
+                  "projectName": "Mobile Chrome",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "30f567a2a73ba42c02b6-99eee02cf7ac72f5e421",
+              "file": "e2e/foods.spec.ts",
+              "line": 290,
+              "column": 7
+            },
+            {
+              "title": "A.4 - Hydration tracker functions",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Mobile Chrome",
+                  "projectName": "Mobile Chrome",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "30f567a2a73ba42c02b6-a58fe41321293d78c29d",
+              "file": "e2e/foods.spec.ts",
+              "line": 318,
+              "column": 7
+            },
+            {
+              "title": "A.5 - Food search functionality",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Mobile Chrome",
+                  "projectName": "Mobile Chrome",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "30f567a2a73ba42c02b6-2ea1876ca6eb3c4a1314",
+              "file": "e2e/foods.spec.ts",
+              "line": 345,
+              "column": 7
+            },
+            {
+              "title": "A.6 - Barcode scanner button available",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Mobile Chrome",
+                  "projectName": "Mobile Chrome",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "30f567a2a73ba42c02b6-e766bb769253519a2296",
+              "file": "e2e/foods.spec.ts",
+              "line": 376,
+              "column": 7
+            },
+            {
+              "title": "A.7 - Quick add dialog functions",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Mobile Chrome",
+                  "projectName": "Mobile Chrome",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "30f567a2a73ba42c02b6-4a3245b9ce98d3245498",
+              "file": "e2e/foods.spec.ts",
+              "line": 399,
+              "column": 7
+            },
+            {
+              "title": "A.8 - Edit food entry",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Mobile Chrome",
+                  "projectName": "Mobile Chrome",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "30f567a2a73ba42c02b6-abfb45bf7f12662ddd79",
+              "file": "e2e/foods.spec.ts",
+              "line": 444,
+              "column": 7
+            },
+            {
+              "title": "A.9 - Delete food entry",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Mobile Chrome",
+                  "projectName": "Mobile Chrome",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "30f567a2a73ba42c02b6-6813f7426811058badc6",
+              "file": "e2e/foods.spec.ts",
+              "line": 495,
+              "column": 7
+            },
+            {
+              "title": "A.10 - Water target adjustment",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Mobile Chrome",
+                  "projectName": "Mobile Chrome",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "30f567a2a73ba42c02b6-64816d224d5690487894",
+              "file": "e2e/foods.spec.ts",
+              "line": 536,
+              "column": 7
+            }
+          ]
+        },
+        {
+          "title": "B. Concurrency & Race Conditions",
+          "file": "e2e/foods.spec.ts",
+          "line": 572,
+          "column": 6,
+          "specs": [
+            {
+              "title": "B.1 - Concurrent food log entries from same user",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "30f567a2a73ba42c02b6-52e6a5652697c7420dbe",
+              "file": "e2e/foods.spec.ts",
+              "line": 574,
+              "column": 7
+            },
+            {
+              "title": "B.2 - Simultaneous meal edits from multiple tabs",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "30f567a2a73ba42c02b6-a718841cc22e45a77f91",
+              "file": "e2e/foods.spec.ts",
+              "line": 616,
+              "column": 7
+            },
+            {
+              "title": "B.3 - Rapid water additions",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "30f567a2a73ba42c02b6-98b586e2d806bf5670e8",
+              "file": "e2e/foods.spec.ts",
+              "line": 654,
+              "column": 7
+            },
+            {
+              "title": "B.4 - Food entry during page refresh",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "30f567a2a73ba42c02b6-4f041583d2ee61261601",
+              "file": "e2e/foods.spec.ts",
+              "line": 686,
+              "column": 7
+            },
+            {
+              "title": "B.1 - Concurrent food log entries from same user",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Mobile Chrome",
+                  "projectName": "Mobile Chrome",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "30f567a2a73ba42c02b6-4c6d87ca4fa2a969e039",
+              "file": "e2e/foods.spec.ts",
+              "line": 574,
+              "column": 7
+            },
+            {
+              "title": "B.2 - Simultaneous meal edits from multiple tabs",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Mobile Chrome",
+                  "projectName": "Mobile Chrome",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "30f567a2a73ba42c02b6-63194d05cd5320102712",
+              "file": "e2e/foods.spec.ts",
+              "line": 616,
+              "column": 7
+            },
+            {
+              "title": "B.3 - Rapid water additions",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Mobile Chrome",
+                  "projectName": "Mobile Chrome",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "30f567a2a73ba42c02b6-0ae39c1a4fe7dbcb39de",
+              "file": "e2e/foods.spec.ts",
+              "line": 654,
+              "column": 7
+            },
+            {
+              "title": "B.4 - Food entry during page refresh",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Mobile Chrome",
+                  "projectName": "Mobile Chrome",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "30f567a2a73ba42c02b6-951e358589cee2df9112",
+              "file": "e2e/foods.spec.ts",
+              "line": 686,
+              "column": 7
+            }
+          ]
+        },
+        {
+          "title": "C. Offline & Network Flakiness",
+          "file": "e2e/foods.spec.ts",
+          "line": 721,
+          "column": 6,
+          "specs": [
+            {
+              "title": "C.1 - Foods page shows cached data when offline",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "30f567a2a73ba42c02b6-39a8e2b938506fd2a0b5",
+              "file": "e2e/foods.spec.ts",
+              "line": 723,
+              "column": 7
+            },
+            {
+              "title": "C.2 - Offline indicator displays",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "30f567a2a73ba42c02b6-6aa6beff604b0a9aa014",
+              "file": "e2e/foods.spec.ts",
+              "line": 748,
+              "column": 7
+            },
+            {
+              "title": "C.3 - High latency network handling",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "30f567a2a73ba42c02b6-730072ef1121a3d53cf7",
+              "file": "e2e/foods.spec.ts",
+              "line": 770,
+              "column": 7
+            },
+            {
+              "title": "C.4 - Network recovery restores functionality",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "30f567a2a73ba42c02b6-90123e486f29337ee072",
+              "file": "e2e/foods.spec.ts",
+              "line": 800,
+              "column": 7
+            },
+            {
+              "title": "C.5 - Pending sync indicator",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "30f567a2a73ba42c02b6-dcd2f373918de5ee29a9",
+              "file": "e2e/foods.spec.ts",
+              "line": 835,
+              "column": 7
+            },
+            {
+              "title": "C.1 - Foods page shows cached data when offline",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Mobile Chrome",
+                  "projectName": "Mobile Chrome",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "30f567a2a73ba42c02b6-cb551ac5ae4c67e9bd85",
+              "file": "e2e/foods.spec.ts",
+              "line": 723,
+              "column": 7
+            },
+            {
+              "title": "C.2 - Offline indicator displays",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Mobile Chrome",
+                  "projectName": "Mobile Chrome",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "30f567a2a73ba42c02b6-d4fe8def914d2faaf361",
+              "file": "e2e/foods.spec.ts",
+              "line": 748,
+              "column": 7
+            },
+            {
+              "title": "C.3 - High latency network handling",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Mobile Chrome",
+                  "projectName": "Mobile Chrome",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "30f567a2a73ba42c02b6-0c63a89d21a5395a5954",
+              "file": "e2e/foods.spec.ts",
+              "line": 770,
+              "column": 7
+            },
+            {
+              "title": "C.4 - Network recovery restores functionality",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Mobile Chrome",
+                  "projectName": "Mobile Chrome",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "30f567a2a73ba42c02b6-79a2309fe266f3c41eec",
+              "file": "e2e/foods.spec.ts",
+              "line": 800,
+              "column": 7
+            },
+            {
+              "title": "C.5 - Pending sync indicator",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Mobile Chrome",
+                  "projectName": "Mobile Chrome",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "30f567a2a73ba42c02b6-27ea6e9d063ff75b5474",
+              "file": "e2e/foods.spec.ts",
+              "line": 835,
+              "column": 7
+            }
+          ]
+        },
+        {
+          "title": "D. Data Integrity & Propagation",
+          "file": "e2e/foods.spec.ts",
+          "line": 873,
+          "column": 6,
+          "specs": [
+            {
+              "title": "D.1 - Food log reflects on home page",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "30f567a2a73ba42c02b6-769731e0104acb79647a",
+              "file": "e2e/foods.spec.ts",
+              "line": 875,
+              "column": 7
+            },
+            {
+              "title": "D.2 - Calorie count updates correctly",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "30f567a2a73ba42c02b6-263f5cc169f81e90566a",
+              "file": "e2e/foods.spec.ts",
+              "line": 916,
+              "column": 7
+            },
+            {
+              "title": "D.3 - Delete cascades correctly",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "30f567a2a73ba42c02b6-9ebeaa54d403fa9833f5",
+              "file": "e2e/foods.spec.ts",
+              "line": 949,
+              "column": 7
+            },
+            {
+              "title": "D.4 - Water intake persists correctly",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "30f567a2a73ba42c02b6-d30bc18472771c4b1818",
+              "file": "e2e/foods.spec.ts",
+              "line": 988,
+              "column": 7
+            },
+            {
+              "title": "D.1 - Food log reflects on home page",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Mobile Chrome",
+                  "projectName": "Mobile Chrome",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "30f567a2a73ba42c02b6-8835db43480ae0e25aea",
+              "file": "e2e/foods.spec.ts",
+              "line": 875,
+              "column": 7
+            },
+            {
+              "title": "D.2 - Calorie count updates correctly",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Mobile Chrome",
+                  "projectName": "Mobile Chrome",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "30f567a2a73ba42c02b6-598fd00feea2d92ab0f9",
+              "file": "e2e/foods.spec.ts",
+              "line": 916,
+              "column": 7
+            },
+            {
+              "title": "D.3 - Delete cascades correctly",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Mobile Chrome",
+                  "projectName": "Mobile Chrome",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "30f567a2a73ba42c02b6-f0f23d35430029de46d7",
+              "file": "e2e/foods.spec.ts",
+              "line": 949,
+              "column": 7
+            },
+            {
+              "title": "D.4 - Water intake persists correctly",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Mobile Chrome",
+                  "projectName": "Mobile Chrome",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "30f567a2a73ba42c02b6-7df56ca00317e1f99934",
+              "file": "e2e/foods.spec.ts",
+              "line": 988,
+              "column": 7
+            }
+          ]
+        },
+        {
+          "title": "E. Supabase-Specific Checks",
+          "file": "e2e/foods.spec.ts",
+          "line": 1024,
+          "column": 6,
+          "specs": [
+            {
+              "title": "E.1 - RLS prevents cross-user food access",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "30f567a2a73ba42c02b6-53f1dbde5924ddb3139f",
+              "file": "e2e/foods.spec.ts",
+              "line": 1026,
+              "column": 7
+            },
+            {
+              "title": "E.2 - Food database search works correctly",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "30f567a2a73ba42c02b6-bf7dc3bfd6cd240c3e43",
+              "file": "e2e/foods.spec.ts",
+              "line": 1064,
+              "column": 7
+            },
+            {
+              "title": "E.3 - Barcode lookup works",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "30f567a2a73ba42c02b6-76320d29d94e3da9ac7e",
+              "file": "e2e/foods.spec.ts",
+              "line": 1083,
+              "column": 7
+            },
+            {
+              "title": "E.4 - Session persists across page reloads",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "30f567a2a73ba42c02b6-05681c154d64dbd32ae6",
+              "file": "e2e/foods.spec.ts",
+              "line": 1110,
+              "column": 7
+            },
+            {
+              "title": "E.1 - RLS prevents cross-user food access",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Mobile Chrome",
+                  "projectName": "Mobile Chrome",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "30f567a2a73ba42c02b6-0a04e83e8e0a7c3edeb0",
+              "file": "e2e/foods.spec.ts",
+              "line": 1026,
+              "column": 7
+            },
+            {
+              "title": "E.2 - Food database search works correctly",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Mobile Chrome",
+                  "projectName": "Mobile Chrome",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "30f567a2a73ba42c02b6-37e579497777271a4ff7",
+              "file": "e2e/foods.spec.ts",
+              "line": 1064,
+              "column": 7
+            },
+            {
+              "title": "E.3 - Barcode lookup works",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Mobile Chrome",
+                  "projectName": "Mobile Chrome",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "30f567a2a73ba42c02b6-e7d08606b177425c02cf",
+              "file": "e2e/foods.spec.ts",
+              "line": 1083,
+              "column": 7
+            },
+            {
+              "title": "E.4 - Session persists across page reloads",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Mobile Chrome",
+                  "projectName": "Mobile Chrome",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "30f567a2a73ba42c02b6-9e3ff8b63dc8fa0a9087",
+              "file": "e2e/foods.spec.ts",
+              "line": 1110,
+              "column": 7
+            }
+          ]
+        },
+        {
+          "title": "F. Security & Auth Flow Pressure",
+          "file": "e2e/foods.spec.ts",
+          "line": 1138,
+          "column": 6,
+          "specs": [
+            {
+              "title": "F.1 - SQL injection blocked in food name",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "30f567a2a73ba42c02b6-d84bffa91e7445d47266",
+              "file": "e2e/foods.spec.ts",
+              "line": 1140,
+              "column": 7
+            },
+            {
+              "title": "F.2 - XSS prevented in food name",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "30f567a2a73ba42c02b6-646b86a77db0805f5fc9",
+              "file": "e2e/foods.spec.ts",
+              "line": 1169,
+              "column": 7
+            },
+            {
+              "title": "F.3 - Invalid token rejected for food operations",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "30f567a2a73ba42c02b6-fcdc8fa80dfcc23e9e70",
+              "file": "e2e/foods.spec.ts",
+              "line": 1204,
+              "column": 7
+            },
+            {
+              "title": "F.4 - Negative calorie values handled",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "30f567a2a73ba42c02b6-ecaa87198bf58137c3ab",
+              "file": "e2e/foods.spec.ts",
+              "line": 1229,
+              "column": 7
+            },
+            {
+              "title": "F.5 - Extremely large values handled",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "30f567a2a73ba42c02b6-f9ede7858d66ddcfd504",
+              "file": "e2e/foods.spec.ts",
+              "line": 1258,
+              "column": 7
+            },
+            {
+              "title": "F.1 - SQL injection blocked in food name",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Mobile Chrome",
+                  "projectName": "Mobile Chrome",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "30f567a2a73ba42c02b6-ab3a96a271341241e4d4",
+              "file": "e2e/foods.spec.ts",
+              "line": 1140,
+              "column": 7
+            },
+            {
+              "title": "F.2 - XSS prevented in food name",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Mobile Chrome",
+                  "projectName": "Mobile Chrome",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "30f567a2a73ba42c02b6-fb5d0e55a950d801062e",
+              "file": "e2e/foods.spec.ts",
+              "line": 1169,
+              "column": 7
+            },
+            {
+              "title": "F.3 - Invalid token rejected for food operations",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Mobile Chrome",
+                  "projectName": "Mobile Chrome",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "30f567a2a73ba42c02b6-f4d3b787e004b2979f53",
+              "file": "e2e/foods.spec.ts",
+              "line": 1204,
+              "column": 7
+            },
+            {
+              "title": "F.4 - Negative calorie values handled",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Mobile Chrome",
+                  "projectName": "Mobile Chrome",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "30f567a2a73ba42c02b6-193ea8c7e2baac40f4e4",
+              "file": "e2e/foods.spec.ts",
+              "line": 1229,
+              "column": 7
+            },
+            {
+              "title": "F.5 - Extremely large values handled",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Mobile Chrome",
+                  "projectName": "Mobile Chrome",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "30f567a2a73ba42c02b6-3f1a91a25c7eb192fd89",
+              "file": "e2e/foods.spec.ts",
+              "line": 1258,
+              "column": 7
+            }
+          ]
+        },
+        {
+          "title": "G. Model & LLM Checks",
+          "file": "e2e/foods.spec.ts",
+          "line": 1288,
+          "column": 6,
+          "specs": [
+            {
+              "title": "G.1 - AI insight displays on Foods page",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "30f567a2a73ba42c02b6-10768503af6fe6e56fa0",
+              "file": "e2e/foods.spec.ts",
+              "line": 1290,
+              "column": 7
+            },
+            {
+              "title": "G.2 - Workout protein recommendation shows",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "30f567a2a73ba42c02b6-9733ffa1b5910fe24f7c",
+              "file": "e2e/foods.spec.ts",
+              "line": 1308,
+              "column": 7
+            },
+            {
+              "title": "G.1 - AI insight displays on Foods page",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Mobile Chrome",
+                  "projectName": "Mobile Chrome",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "30f567a2a73ba42c02b6-5bc5fbf2a861f14be136",
+              "file": "e2e/foods.spec.ts",
+              "line": 1290,
+              "column": 7
+            },
+            {
+              "title": "G.2 - Workout protein recommendation shows",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Mobile Chrome",
+                  "projectName": "Mobile Chrome",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "30f567a2a73ba42c02b6-762ba6f0aa4efc15768b",
+              "file": "e2e/foods.spec.ts",
+              "line": 1308,
+              "column": 7
+            }
+          ]
+        },
+        {
+          "title": "H. Performance",
+          "file": "e2e/foods.spec.ts",
+          "line": 1342,
+          "column": 6,
+          "specs": [
+            {
+              "title": "H.1 - Foods page load time under SLA",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "30f567a2a73ba42c02b6-dd5de39b3b9f7b6ae503",
+              "file": "e2e/foods.spec.ts",
+              "line": 1344,
+              "column": 7
+            },
+            {
+              "title": "H.2 - Food search response time",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "30f567a2a73ba42c02b6-d97111eca34418d70f4e",
+              "file": "e2e/foods.spec.ts",
+              "line": 1362,
+              "column": 7
+            },
+            {
+              "title": "H.3 - Food log API response time",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "30f567a2a73ba42c02b6-33d6b7cfdad609a6d918",
+              "file": "e2e/foods.spec.ts",
+              "line": 1379,
+              "column": 7
+            },
+            {
+              "title": "H.4 - Memory stability under rapid operations",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "30f567a2a73ba42c02b6-3190443777c10ef272e5",
+              "file": "e2e/foods.spec.ts",
+              "line": 1398,
+              "column": 7
+            },
+            {
+              "title": "H.1 - Foods page load time under SLA",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Mobile Chrome",
+                  "projectName": "Mobile Chrome",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "30f567a2a73ba42c02b6-9675e4529a6c2aa12e8b",
+              "file": "e2e/foods.spec.ts",
+              "line": 1344,
+              "column": 7
+            },
+            {
+              "title": "H.2 - Food search response time",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Mobile Chrome",
+                  "projectName": "Mobile Chrome",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "30f567a2a73ba42c02b6-e5eddc28a53a2a99cb0d",
+              "file": "e2e/foods.spec.ts",
+              "line": 1362,
+              "column": 7
+            },
+            {
+              "title": "H.3 - Food log API response time",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Mobile Chrome",
+                  "projectName": "Mobile Chrome",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "30f567a2a73ba42c02b6-afa5a038d63655e7faac",
+              "file": "e2e/foods.spec.ts",
+              "line": 1379,
+              "column": 7
+            },
+            {
+              "title": "H.4 - Memory stability under rapid operations",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Mobile Chrome",
+                  "projectName": "Mobile Chrome",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "30f567a2a73ba42c02b6-a88d892f88a11fcdb368",
+              "file": "e2e/foods.spec.ts",
+              "line": 1398,
+              "column": 7
+            }
+          ]
+        },
+        {
+          "title": "I. Accessibility",
+          "file": "e2e/foods.spec.ts",
+          "line": 1428,
+          "column": 6,
+          "specs": [
+            {
+              "title": "I.1 - Keyboard navigation works",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "30f567a2a73ba42c02b6-fdd3f276295944fc43d4",
+              "file": "e2e/foods.spec.ts",
+              "line": 1430,
+              "column": 7
+            },
+            {
+              "title": "I.2 - Meal cards have proper ARIA labels",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "30f567a2a73ba42c02b6-53e2d24106390db06e7c",
+              "file": "e2e/foods.spec.ts",
+              "line": 1452,
+              "column": 7
+            },
+            {
+              "title": "I.3 - Screen reader announcements for food additions",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "30f567a2a73ba42c02b6-649d2ab4abdcc2e756cf",
+              "file": "e2e/foods.spec.ts",
+              "line": 1474,
+              "column": 7
+            },
+            {
+              "title": "I.4 - Color contrast is sufficient",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "30f567a2a73ba42c02b6-5e4647ffc34bb9eb4a62",
+              "file": "e2e/foods.spec.ts",
+              "line": 1498,
+              "column": 7
+            },
+            {
+              "title": "I.5 - Skip link available",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "30f567a2a73ba42c02b6-dc032cd76d7de2c501ea",
+              "file": "e2e/foods.spec.ts",
+              "line": 1515,
+              "column": 7
+            },
+            {
+              "title": "I.1 - Keyboard navigation works",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Mobile Chrome",
+                  "projectName": "Mobile Chrome",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "30f567a2a73ba42c02b6-7e69dde7a3a433932f4f",
+              "file": "e2e/foods.spec.ts",
+              "line": 1430,
+              "column": 7
+            },
+            {
+              "title": "I.2 - Meal cards have proper ARIA labels",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Mobile Chrome",
+                  "projectName": "Mobile Chrome",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "30f567a2a73ba42c02b6-a31d4bd9b2c68ea15262",
+              "file": "e2e/foods.spec.ts",
+              "line": 1452,
+              "column": 7
+            },
+            {
+              "title": "I.3 - Screen reader announcements for food additions",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Mobile Chrome",
+                  "projectName": "Mobile Chrome",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "30f567a2a73ba42c02b6-f10a3c72a08b63303295",
+              "file": "e2e/foods.spec.ts",
+              "line": 1474,
+              "column": 7
+            },
+            {
+              "title": "I.4 - Color contrast is sufficient",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Mobile Chrome",
+                  "projectName": "Mobile Chrome",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "30f567a2a73ba42c02b6-d643c25a073eb0700c02",
+              "file": "e2e/foods.spec.ts",
+              "line": 1498,
+              "column": 7
+            },
+            {
+              "title": "I.5 - Skip link available",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Mobile Chrome",
+                  "projectName": "Mobile Chrome",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "30f567a2a73ba42c02b6-22ac35118fe6aeacdc01",
+              "file": "e2e/foods.spec.ts",
+              "line": 1515,
+              "column": 7
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-03-04T20:02:08.403Z",
+    "duration": 47.006000000000085,
+    "expected": 0,
+    "skipped": 86,
+    "unexpected": 0,
+    "flaky": 0
+  }
+}

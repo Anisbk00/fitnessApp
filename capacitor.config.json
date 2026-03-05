@@ -1,0 +1,26 @@
+{
+  "appId": "com.progresscompanion.app",
+  "appName": "Progress Companion",
+  "webDir": ".next",
+  "server": {
+    "androidScheme": "https"
+  },
+  "plugins": {
+    "CapacitorHttp": {
+      "enabled": true
+    },
+    "Preferences": {
+      "group": "ProgressCompanion"
+    }
+  },
+  "ios": {
+    "contentInset": "automatic",
+    "preferredContentMode": "mobile",
+    "scheme": "Progress Companion"
+  },
+  "android": {
+    "allowMixedContent": true,
+    "captureInput": true,
+    "webContentsDebuggingEnabled": false
+  }
+}

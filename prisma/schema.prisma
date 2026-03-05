@@ -1,0 +1,522 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model BodyCompositionScan {
+  id                  String   @id
+  userId              String
+  frontPhotoUrl       String
+  sidePhotoUrl        String?
+  backPhotoUrl        String?
+  thumbnailUrl        String?
+  capturedAt          DateTime @default(now())
+  lighting            String   @default("moderate")
+  poseAlignment       Float    @default(0.5)
+  clothing            String   @default("light")
+  fastedState         Boolean?
+  timeOfDay           String?
+  bodyFatMin          Float
+  bodyFatMax          Float
+  bodyFatConfidence   Float
+  leanMassMin         Float?
+  leanMassMax         Float?
+  leanMassConfidence  Float?
+  fatMassMin          Float?
+  fatMassMax          Float?
+  fatMassConfidence   Float?
+  upperBodyFat        Float?
+  lowerBodyFat        Float?
+  abdominalFat        Float?
+  segmentalConfidence Float?
+  muscleFullness      Float?
+  definition          Float?
+  symmetryScore       Float?
+  bodyFatChange       Float?
+  leanMassChange      Float?
+  changeDirection     String?
+  changeConfidence    Float?
+  aiCommentary        String?
+  trendInsight        String?
+  photoClarity        Float    @default(0.5)
+  lightingQuality     Float    @default(0.5)
+  poseQuality         Float    @default(0.5)
+  dataCompleteness    Float    @default(0.5)
+  modelVersion        String   @default("v1.0")
+  processingTime      Int?
+  avgCalories         Float?
+  avgProtein          Float?
+  weightTrend         String?
+  trainingVolume      Float?
+  rapidChangeDetected Boolean  @default(false)
+  unhealthyTrend      Boolean  @default(false)
+  safetyAlert         String?
+  isPrivate           Boolean  @default(true)
+  encrypted           Boolean  @default(true)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime
+  User                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Contribution {
+  id               String    @id
+  userId           String?
+  foodId           String?
+  contributionType String
+  fieldName        String?
+  valueOld         String?
+  valueNew         String?
+  creditsAwarded   Int       @default(1)
+  status           String    @default("pending")
+  reviewedBy       String?
+  reviewedAt       DateTime?
+  createdAt        DateTime  @default(now())
+  Food             Food?     @relation(fields: [foodId], references: [id])
+  User             User?     @relation(fields: [userId], references: [id])
+}
+
+model Experiment {
+  id               String    @id
+  userId           String
+  title            String
+  description      String?
+  experimentType   String
+  intervention     String
+  baselineBehavior String?
+  durationWeeks    Int       @default(2)
+  startDate        DateTime  @default(now())
+  endDate          DateTime?
+  projectedEffect  String?
+  effectConfidence Float?
+  adherenceScore   Float?
+  adherenceLog     String?
+  status           String    @default("active")
+  results          String?
+  insights         String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime
+  User             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Food {
+  id                 String         @id
+  name               String
+  brand              String?
+  barcode            String?        @unique
+  category           String
+  cuisine            String?
+  calories           Float
+  protein            Float          @default(0)
+  carbs              Float          @default(0)
+  fat                Float          @default(0)
+  fiber              Float          @default(0)
+  sugar              Float          @default(0)
+  sodium             Float          @default(0)
+  servingSize        Float          @default(100)
+  servingUnit        String         @default("g")
+  verificationStatus String         @default("draft")
+  confidenceScore    Float          @default(0.5)
+  contributorId      String?
+  source             String         @default("community")
+  sourceUrl          String?
+  lastVerifiedAt     DateTime?
+  verifiedBy         String?
+  portionPhotos      String?
+  parentFoodId       String?
+  isHalal            Boolean?
+  isKosher           Boolean?
+  isVegan            Boolean?
+  isVegetarian       Boolean?
+  tags               String?
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime
+  Contribution       Contribution[]
+  Food               Food?          @relation("FoodToFood", fields: [parentFoodId], references: [id])
+  other_Food         Food[]         @relation("FoodToFood")
+  FoodLogEntry       FoodLogEntry[]
+}
+
+model FoodLogEntry {
+  id         String   @id
+  userId     String
+  mealId     String?
+  foodId     String?
+  quantity   Float
+  unit       String   @default("g")
+  multiplier Float    @default(1.0)
+  calories   Float
+  protein    Float    @default(0)
+  carbs      Float    @default(0)
+  fat        Float    @default(0)
+  source     String   @default("manual")
+  confidence Float    @default(1.0)
+  rationale  String?
+  loggedAt   DateTime @default(now())
+  createdAt  DateTime @default(now())
+  Food       Food?    @relation(fields: [foodId], references: [id])
+  Meal       Meal?    @relation(fields: [mealId], references: [id], onDelete: Cascade)
+  User       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Goal {
+  id           String    @id
+  userId       String
+  goalType     String
+  targetValue  Float
+  currentValue Float?
+  unit         String
+  startDate    DateTime  @default(now())
+  targetDate   DateTime?
+  status       String    @default("active")
+  source       String    @default("manual")
+  confidence   Float     @default(1.0)
+  rationale    String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime
+  User         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Insight {
+  id               String    @id
+  userId           String
+  insightType      String
+  category         String
+  title            String
+  description      String
+  actionSuggestion String?
+  confidence       Float     @default(0.5)
+  dataSources      String?
+  methodology      String?
+  improvingInputs  String?
+  priority         Int       @default(0)
+  isActive         Boolean   @default(true)
+  dismissed        Boolean   @default(false)
+  actedUpon        Boolean   @default(false)
+  generatedAt      DateTime  @default(now())
+  expiresAt        DateTime?
+  createdAt        DateTime  @default(now())
+  User             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Meal {
+  id                 String         @id
+  userId             String
+  mealType           String
+  capturedAt         DateTime       @default(now())
+  photoUrl           String?
+  analysisStatus     String         @default("pending")
+  analysisConfidence Float?
+  totalCalories      Float          @default(0)
+  totalProtein       Float          @default(0)
+  totalCarbs         Float          @default(0)
+  totalFat           Float          @default(0)
+  notes              String?
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime
+  FoodLogEntry       FoodLogEntry[]
+  User               User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Measurement {
+  id              String   @id
+  userId          String
+  measurementType String
+  value           Float
+  unit            String
+  capturedAt      DateTime @default(now())
+  source          String   @default("manual")
+  deviceModel     String?
+  confidence      Float    @default(1.0)
+  rationale       String?
+  fastedState     Boolean?
+  timeOfDay       String?
+  createdAt       DateTime @default(now())
+  User            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model ProgressPhoto {
+  id                 String    @id
+  userId             String
+  imageUrl           String
+  thumbnailUrl       String?
+  capturedAt         DateTime  @default(now())
+  lighting           String?
+  pose               String?
+  clothing           String?
+  bodyFatEstimate    Float?
+  muscleMassEstimate Float?
+  weightEstimate     Float?
+  analysisSource     String?
+  analysisConfidence Float?
+  analysisTimestamp  DateTime?
+  analysisVersion    String?
+  morphImageUrl      String?
+  morphGeneratedAt   DateTime?
+  morphLabeled       Boolean   @default(false)
+  changeZones        String?
+  notes              String?
+  isPrivate          Boolean   @default(true)
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime
+  User               User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model User {
+  id                  String                @id
+  email               String                @unique
+  password            String?
+  name                String?
+  avatarUrl           String?
+  timezone            String                @default("UTC")
+  locale              String                @default("en")
+  coachingTone        String                @default("supportive")
+  privacyMode         String                @default("private")
+  // Optimistic locking version field - incremented on each update
+  version             Int                   @default(0)
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime
+  BodyCompositionScan BodyCompositionScan[]
+  Contribution        Contribution[]
+  Experiment          Experiment[]
+  FoodLogEntry        FoodLogEntry[]
+  Goal                Goal[]
+  Insight             Insight[]
+  Meal                Meal[]
+  Measurement         Measurement[]
+  ProgressPhoto       ProgressPhoto[]
+  Supplement          Supplement[]
+  SupplementLog       SupplementLog[]
+  UserBadge           UserBadge[]
+  UserProfile         UserProfile?
+  UserSettings        UserSettings?
+  WearableDevice      WearableDevice[]
+  Workout             Workout[]
+}
+
+model UserBadge {
+  id               String   @id
+  userId           String
+  badgeType        String
+  badgeName        String
+  badgeDescription String?
+  badgeIcon        String?
+  earnedAt         DateTime @default(now())
+  isDisplayed      Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  User             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model UserProfile {
+  id                  String    @id
+  userId              String    @unique
+  birthDate           DateTime?
+  biologicalSex       String?
+  heightCm            Float?
+  targetWeightKg      Float?
+  activityLevel       String    @default("moderate")
+  fitnessLevel        String    @default("beginner")
+  dietaryRestrictions String?
+  allergies           String?
+  primaryGoal         String?
+  targetDate          DateTime?
+  weeklyCheckinDay    Int       @default(0)
+  // Optimistic locking version field - incremented on each update
+  version             Int       @default(0)
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime
+  User                User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model UserSettings {
+  id                      String   @id
+  userId                  String   @unique
+  enableMorphMemory       Boolean  @default(false)
+  enableProjections       Boolean  @default(false)
+  enableCohortMirror      Boolean  @default(false)
+  enableAIChat            Boolean  @default(true)
+  dailyReminderTime       String?
+  weeklyInsightDay        Int      @default(0)
+  experimentReminders     Boolean  @default(true)
+  exportIncludePhotos     Boolean  @default(true)
+  exportIncludeProvenance Boolean  @default(true)
+  exportFormat            String   @default("json")
+  // Setup tracking
+  setupCompleted          Boolean  @default(false)
+  setupCompletedAt        DateTime?
+  setupSkipped            Boolean  @default(false)
+  lastSuggestionAt        DateTime?
+  // Optimistic locking version field - incremented on each update
+  version                 Int      @default(0)
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime
+  User                    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model WearableDevice {
+  id             String    @id
+  userId         String
+  deviceType     String
+  deviceModel    String?
+  deviceName     String?
+  isConnected    Boolean   @default(false)
+  lastSyncAt     DateTime?
+  accessToken    String?
+  syncActivities Boolean   @default(true)
+  syncSleep      Boolean   @default(true)
+  syncHeartRate  Boolean   @default(true)
+  syncSteps      Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime
+  User           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Workout {
+  id              String            @id
+  userId          String
+  activityType    String            @default("other")
+  workoutType     String            @default("cardio")
+  name            String?
+  startedAt       DateTime          @default(now())
+  completedAt     DateTime?
+  durationMinutes Int?
+  activeDuration  Int?
+  distanceMeters  Float?
+  routeData       String?
+  elevationGain   Float?
+  elevationLoss   Float?
+  avgPace         Float?
+  avgSpeed        Float?
+  maxPace         Float?
+  maxSpeed        Float?
+  avgHeartRate    Int?
+  maxHeartRate    Int?
+  avgCadence      Int?
+  maxCadence      Int?
+  totalVolume     Float?
+  totalReps       Int?
+  totalSets       Int?
+  caloriesBurned  Float?
+  trainingLoad    Float?
+  intensityFactor Float?
+  recoveryImpact  Float?
+  effortScore     Float?
+  isPR            Boolean           @default(false)
+  prType          String?
+  splits          String?
+  deviceSource    String?
+  deviceId        String?
+  offlineMode     Boolean           @default(false)
+  syncedAt        DateTime?
+  notes           String?
+  photos          String?
+  rating          Int?
+  weatherData     String?
+  source          String            @default("manual")
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime
+  User            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  WorkoutExercise WorkoutExercise[]
+}
+
+model ErrorLog {
+  id            String   @id
+  message       String
+  name          String
+  stack         String?
+  category      String
+  severity      String
+  userId        String?
+  route         String?
+  pathname      String?
+  userAgent     String?
+  context       String?
+  fingerprint   String
+  handled       Boolean  @default(false)
+  resolved      Boolean  @default(false)
+  resolvedAt    DateTime?
+  resolvedBy    String?
+  notes         String?
+  timestamp     DateTime @default(now())
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model WorkoutExercise {
+  id           String   @id
+  workoutId    String
+  exerciseName String
+  exerciseType String
+  sets         String?
+  totalSets    Int      @default(1)
+  totalReps    Int?
+  totalWeight  Float?
+  notes        String?
+  createdAt    DateTime @default(now())
+  Workout      Workout  @relation(fields: [workoutId], references: [id], onDelete: Cascade)
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Supplements Models - For tracking supplement intake
+// ═══════════════════════════════════════════════════════════════
+
+model Supplement {
+  id                String   @id
+  userId            String
+  name              String
+  brand             String?
+  barcode           String?  @unique
+  category          String   @default("supplement") // vitamin, mineral, protein, herbal, other
+  
+  // Nutrition per serving
+  servingSize       Float    @default(1)
+  servingUnit       String   @default("unit") // capsule, tablet, scoop, ml, g
+  caloriesPerServing Float   @default(0)
+  proteinPerServing Float    @default(0)
+  carbsPerServing   Float    @default(0)
+  fatPerServing     Float    @default(0)
+  
+  // Supplement-specific nutrients (stored as JSON string for SQLite compatibility)
+  nutrients         String?  // JSON object with vitamin/mineral values
+  
+  // Metadata
+  source            String   @default("manual")
+  verified          Boolean  @default(false)
+  notes             String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime
+  
+  User              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  SupplementLog     SupplementLog[]
+}
+
+model SupplementLog {
+  id              String   @id
+  userId          String
+  supplementId    String?
+  supplementName  String?
+  quantity        Float    @default(1)
+  unit            String   @default("unit")
+  
+  // Nutrition consumed
+  calories        Float    @default(0)
+  protein         Float    @default(0)
+  carbs           Float    @default(0)
+  fat             Float    @default(0)
+  
+  // Timing
+  loggedAt        DateTime @default(now())
+  timeOfDay       String?  // morning, afternoon, evening, with_meal, before_bed
+  
+  // Additional
+  notes           String?
+  source          String   @default("manual")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime
+  
+  Supplement      Supplement? @relation(fields: [supplementId], references: [id], onDelete: SetNull)
+  User            User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+}

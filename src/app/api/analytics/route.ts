@@ -1,0 +1,309 @@
+import { NextResponse } from 'next/server';
+import { createClient } from '@/lib/supabase/server';
+import { subDays, startOfDay, endOfDay } from 'date-fns';
+import { 
+  getOrCreateProfile,
+  getBodyMetrics,
+  getFoodLogs,
+  getWorkouts
+} from '@/lib/supabase/data-service';
+
+// ═══════════════════════════════════════════════════════════════
+// GET /api/analytics
+// ═══════════════════════════════════════════════════════════════
+
+export async function GET(request: Request) {
+  try {
+    const supabase = await createClient();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+    }
+
+    // Get or create profile
+    await getOrCreateProfile(user);
+
+    const { searchParams } = new URL(request.url);
+    const range = searchParams.get('range') || '30d';
+    const metricType = searchParams.get('metric') || 'weight';
+
+    // Get latest weight
+    const weightMetrics = await getBodyMetrics(user.id, 'weight', { days: 30 });
+    
+    // Get body fat measurements
+    const bodyFatMetrics = await getBodyMetrics(user.id, 'body_fat', { days: 30 });
+    
+    // Get lean mass measurements
+    const leanMassMetrics = await getBodyMetrics(user.id, 'lean_mass', { days: 30 });
+
+    // Get food logs for nutrition
+    const foodLogs = await getFoodLogs(user.id);
+
+    // Get workouts
+    const workouts = await getWorkouts(user.id);
+
+    // Calculate date range
+    const days = range === '7d' ? 7 : range === '90d' ? 90 : 30;
+    const startDate = subDays(new Date(), days);
+
+    // Map metric types to database measurement types
+    const dbMetricType = metricType === 'leanMass' ? 'lean_mass' 
+      : metricType === 'bodyFat' ? 'body_fat' 
+      : metricType;
+
+    // Fetch measurements for the selected metric
+    const measurements = await getBodyMetrics(user.id, dbMetricType, { days });
+
+    // Calculate trends
+    const calculateTrend = (data: typeof measurements) => {
+      if (data.length < 3) return { trend: 'stable' as const, confidence: 0, slope: 0 };
+      
+      // Sort by date (oldest first for regression)
+      const sorted = [...data].sort((a, b) => 
+        new Date(a.captured_at).getTime() - new Date(b.captured_at).getTime()
+      );
+      
+      // Remove outliers using IQR method
+      const values = sorted.map(m => m.value);
+      const sortedValues = [...values].sort((a, b) => a - b);
+      const q1 = sortedValues[Math.floor(sortedValues.length * 0.25)];
+      const q3 = sortedValues[Math.floor(sortedValues.length * 0.75)];
+      const iqr = q3 - q1;
+      const lowerBound = q1 - 1.5 * iqr;
+      const upperBound = q3 + 1.5 * iqr;
+      
+      const filteredData = sorted.filter(m => m.value >= lowerBound && m.value <= upperBound);
+      
+      if (filteredData.length < 3) return { trend: 'stable' as const, confidence: 0, slope: 0 };
+      
+      // Linear regression for trend
+      const n = filteredData.length;
+      const xValues = filteredData.map((_, i) => i);
+      const yValues = filteredData.map(m => m.value);
+      
+      const sumX = xValues.reduce((a, b) => a + b, 0);
+      const sumY = yValues.reduce((a, b) => a + b, 0);
+      const sumXY = xValues.reduce((sum, x, i) => sum + x * yValues[i], 0);
+      const sumXX = xValues.reduce((sum, x) => sum + x * x, 0);
+      
+      const slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
+      const meanY = sumY / n;
+      
+      // Calculate R² for confidence
+      const yMean = meanY;
+      const ssTot = yValues.reduce((sum, y) => sum + Math.pow(y - yMean, 2), 0);
+      const ssRes = yValues.reduce((sum, y, i) => {
+        const predicted = slope * xValues[i] + (meanY - slope * (sumX / n));
+        return sum + Math.pow(y - predicted, 2);
+      }, 0);
+      const rSquared = ssTot > 0 ? 1 - (ssRes / ssTot) : 0;
+      
+      // Confidence based on R² and number of data points
+      const confidence = Math.min(100, Math.max(0, rSquared * 100 * Math.min(n / 10, 1)));
+      
+      // Determine trend direction
+      const relativeSlope = Math.abs(slope / Math.max(meanY, 0.001)) * 100;
+      const threshold = 0.5;
+      
+      let trend: 'up' | 'down' | 'stable';
+      if (relativeSlope > threshold && slope > 0) trend = 'up';
+      else if (relativeSlope > threshold && slope < 0) trend = 'down';
+      else trend = 'stable';
+      
+      return { trend, confidence: Math.round(confidence), slope: Math.round(relativeSlope * 100) / 100 };
+    };
+
+    // Calculate percentage change
+    const calculatePercentChange = (data: typeof measurements) => {
+      if (data.length < 2) return 0;
+      const sorted = [...data].sort((a, b) => 
+        new Date(a.captured_at).getTime() - new Date(b.captured_at).getTime()
+      );
+      const first = sorted[0].value;
+      const last = sorted[sorted.length - 1].value;
+      return ((last - first) / Math.max(first, 0.001)) * 100;
+    };
+
+    // Aggregate nutrition by day
+    const nutritionByDay = foodLogs.reduce((acc, entry) => {
+      const day = new Date(entry.logged_at).toISOString().split('T')[0];
+      if (!acc[day]) {
+        acc[day] = { calories: 0, protein: 0, carbs: 0, fat: 0 };
+      }
+      acc[day].calories += entry.calories || 0;
+      acc[day].protein += entry.protein || 0;
+      acc[day].carbs += entry.carbs || 0;
+      acc[day].fat += entry.fat || 0;
+      return acc;
+    }, {} as Record<string, { calories: number; protein: number; carbs: number; fat: number }>);
+
+    // Calculate nutrition metrics
+    const nutritionDays = Object.keys(nutritionByDay).length;
+    const avgCalories = nutritionDays > 0 
+      ? Object.values(nutritionByDay).reduce((sum, d) => sum + d.calories, 0) / nutritionDays 
+      : 0;
+    const avgProtein = nutritionDays > 0 
+      ? Object.values(nutritionByDay).reduce((sum, d) => sum + d.protein, 0) / nutritionDays 
+      : 0;
+
+    // Calculate training metrics
+    const totalWorkouts = workouts.length;
+    const totalVolume = 0; // Would need workout exercises
+    const totalDuration = workouts.reduce((sum, w) => sum + (w.duration_minutes || 0), 0);
+    const avgTrainingLoad = workouts.length > 0 
+      ? workouts.reduce((sum, w) => sum + (w.training_load || 0), 0) / workouts.length 
+      : 0;
+    const avgRecoveryImpact = workouts.length > 0 
+      ? workouts.reduce((sum, w) => sum + (w.recovery_impact || 0), 0) / workouts.length 
+      : 0;
+
+    // Default targets for calculations
+    const targetCalories = 2200;
+    const targetProtein = 150;
+
+    // Calculate scores
+    const caloricBalanceScore = Math.min(100, Math.max(0, 100 - Math.abs(avgCalories - targetCalories) / targetCalories * 50));
+    const proteinScore = Math.min(100, (avgProtein / targetProtein) * 100);
+    const recoveryScore = Math.max(0, Math.min(100, 100 - (avgTrainingLoad * 2)));
+    const sleepScore = Math.max(50, Math.min(100, 100 - (avgRecoveryImpact * 1.5)));
+    const stressScore = Math.max(30, Math.min(100, 100 - (totalWorkouts * 0.3)));
+    const carbTimingScore = totalWorkouts > 0 ? Math.min(100, 60 + totalWorkouts * 5) : 50;
+    const fatQualityScore = Math.min(100, 50 + caloricBalanceScore * 0.5);
+
+    // Progress trend
+    const progressTrend = (() => {
+      if (weightMetrics.length > 1) {
+        const prev = weightMetrics[1]?.value;
+        const curr = weightMetrics[0]?.value;
+        if (curr && prev) {
+          if (curr < prev) return 'down';
+          if (curr > prev) return 'up';
+        }
+      }
+      return 'stable';
+    })();
+
+    // Build response
+    const response = {
+      // Graph data
+      graphData: measurements.map(m => ({
+        date: m.captured_at,
+        value: m.value
+      })),
+      
+      // Trend info
+      trend: calculateTrend(measurements).trend,
+      trendConfidence: calculateTrend(measurements).confidence,
+      percentChange: calculatePercentChange(measurements),
+      
+      // Body composition
+      bodyComposition: {
+        currentWeight: weightMetrics[0]?.value || null,
+        previousWeight: weightMetrics[1]?.value || null,
+        currentBodyFat: bodyFatMetrics[0]?.value || null,
+        previousBodyFat: bodyFatMetrics[1]?.value || null,
+        currentLeanMass: leanMassMetrics[0]?.value || null,
+        previousLeanMass: leanMassMetrics[1]?.value || null,
+        weightChange: weightMetrics[0] && weightMetrics[1] 
+          ? weightMetrics[0].value - weightMetrics[1].value 
+          : null,
+        bodyFatChange: bodyFatMetrics[0] && bodyFatMetrics[1]
+          ? bodyFatMetrics[0].value - bodyFatMetrics[1].value
+          : null,
+        leanMassChange: leanMassMetrics[0] && leanMassMetrics[1]
+          ? leanMassMetrics[0].value - leanMassMetrics[1].value
+          : null
+      },
+      
+      // Nutrition analytics
+      nutrition: {
+        avgCalories: Math.round(avgCalories),
+        avgProtein: Math.round(avgProtein),
+        avgCarbs: Math.round(nutritionDays > 0 
+          ? Object.values(nutritionByDay).reduce((sum, d) => sum + d.carbs, 0) / nutritionDays 
+          : 0),
+        avgFat: Math.round(nutritionDays > 0 
+          ? Object.values(nutritionByDay).reduce((sum, d) => sum + d.fat, 0) / nutritionDays 
+          : 0),
+        caloricBalanceScore: Math.round(caloricBalanceScore),
+        proteinScore: Math.round(proteinScore),
+        carbTimingScore: Math.round(carbTimingScore),
+        fatQualityScore: Math.round(fatQualityScore),
+        metabolicStability: Math.round((caloricBalanceScore + proteinScore) / 2),
+        scoreConfidence: Math.min(100, Math.round(
+          (nutritionDays >= 7 ? 100 : nutritionDays * 14)
+        ))
+      },
+      
+      // Training analytics
+      training: {
+        totalWorkouts,
+        totalVolume: Math.round(totalVolume),
+        totalDuration,
+        avgWorkoutDuration: totalWorkouts > 0 ? Math.round(totalDuration / totalWorkouts) : 0,
+        recoveryScore: Math.round(recoveryScore),
+        volumeTrend: totalVolume > 0 ? 'up' as const : 'stable' as const,
+        volumeScore: Math.min(100, totalVolume / 100),
+        recoveryScoreRadar: Math.round(recoveryScore),
+        sleepScore: Math.round(sleepScore),
+        calorieScore: caloricBalanceScore,
+        stressScore: Math.round(stressScore)
+      },
+      
+      // Evolution data (historical)
+      evolution: await getEvolutionData(user.id),
+
+      // Profile completion status
+      profileCompletion: {
+        score: 30,
+        isComplete: false,
+        warnings: ['Complete your profile for personalized targets'],
+        calculationConfidence: 30,
+        missingFields: {
+          height: true,
+          birthDate: true,
+          biologicalSex: true,
+          activityLevel: false,
+          primaryGoal: false,
+          targetWeight: true,
+          hasWeightData: weightMetrics.length === 0,
+        },
+      },
+    };
+
+    return NextResponse.json(response);
+  } catch (error) {
+    console.error('Analytics API error:', error);
+    return NextResponse.json(
+      { error: 'Failed to fetch analytics data' },
+      { status: 500 }
+    );
+  }
+}
+
+// Get evolution data across months
+async function getEvolutionData(userId: string) {
+  const months = [];
+  const now = new Date();
+  
+  for (let i = 11; i >= 0; i--) {
+    const monthStart = startOfDay(subDays(now, (i + 1) * 30));
+    const monthEnd = endOfDay(subDays(now, i * 30));
+    
+    const [weight, bodyFat, leanMass] = await Promise.all([
+      getBodyMetrics(userId, 'weight', { days: 30 }),
+      getBodyMetrics(userId, 'body_fat', { days: 30 }),
+      getBodyMetrics(userId, 'lean_mass', { days: 30 })
+    ]);
+    
+    months.push({
+      month: subDays(now, i * 30).toISOString(),
+      weight: weight[0]?.value || null,
+      bodyFat: bodyFat[0]?.value || null,
+      leanMass: leanMass[0]?.value || null
+    });
+  }
+  
+  return months;
+}
