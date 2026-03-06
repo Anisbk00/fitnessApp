@@ -40,7 +40,7 @@ import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/comp
 import { OnboardingFlow, type OnboardingData } from "@/components/fitness/onboarding-flow";
 import { AnalyticsPage } from "@/components/fitness/analytics-page";
 import { FoodsPage } from "@/components/fitness/foods-page";
-import { WorkoutsPage } from "@/components/fitness/workouts-page";
+import { WorkoutsPage } from "@/components/fitness/workouts-page-v2";
 import { ProfilePage } from "@/components/fitness/profile-page";
 import { ProvenanceTag } from "@/components/fitness/provenance-tag";
 import { AppProvider, useApp, type TodayWorkoutSummary, type FoodLogEntry, calculateStreak } from "@/contexts/app-context";
