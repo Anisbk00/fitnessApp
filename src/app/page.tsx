@@ -417,14 +417,9 @@ function ProgressCompanionHome() {
   // Use centralized streak calculation from context (eliminates duplicate logic)
   const userStreak = useMemo(() => calculateStreak(foodLogEntries), [foodLogEntries]);
   
-  // Watch dataVersion to auto-refresh when data changes in other components
-  // This provides cache invalidation signal for cross-component updates
-  useEffect(() => {
-    if (dataVersion > 0 && !isRefreshInProgressRef.current) {
-      // Data was modified elsewhere - refresh our display
-      refetchNutrition();
-    }
-  }, [dataVersion, refetchNutrition]);
+  // REMOVED: dataVersion watcher was causing excessive refetches
+  // The context already handles data synchronization through its own effects
+  // Cross-component updates are handled by the context's refreshAll mechanism
   
   // Compute intelligent greeting using computed userStreak (deterministic)
   const greeting = useMemo(() => {
@@ -455,12 +450,44 @@ function ProgressCompanionHome() {
    * When analytics data is available, uses computed scores (caloricBalanceScore, 
    * proteinScore, recoveryScore) for more accurate assessment.
    */
+  // Stabilize body score with ref to prevent rapid recalculation
+  const bodyScoreRef = useRef<{ score: number; confidence: number; isDefaultGoal: boolean } | null>(null);
+  const lastBodyScoreInputsRef = useRef<string>('');
+  
   const bodyScore = useMemo(() => {
     // Get goal with explicit warning for default assumption
     // Use stable primitive extracted at component level
     const explicitGoal = primaryGoal?.toLowerCase();
     const goal = explicitGoal || 'maintenance';
     const isDefaultGoal = !explicitGoal; // Flag for UI warning
+    
+    // Create a hash of inputs to detect actual changes vs object reference changes
+    const inputHash = JSON.stringify({
+      goal,
+      calCurr: nutrition.calories.current,
+      calTarg: nutrition.calories.target,
+      proCurr: nutrition.protein.current,
+      proTarg: nutrition.protein.target,
+      workoutCal: workoutSummary?.totalCalories,
+      workoutCount: workoutSummary?.workoutCount,
+      hydrationCurr: hydration.current,
+      hydrationTarg: hydration.target,
+      streak: userStreak,
+      analyticsCal: analyticsCaloricBalanceScore,
+      analyticsPro: analyticsProteinScore,
+      analyticsVol: analyticsVolumeScore,
+      analyticsRec: analyticsRecoveryScore,
+      analyticsTrend: analyticsTrend,
+      analyticsPct: analyticsPercentChange,
+      analyticsLoad: analyticsLoading,
+      foodLogLen: foodLogEntries?.length,
+    });
+    
+    // If inputs haven't actually changed, return cached result
+    if (inputHash === lastBodyScoreInputsRef.current && bodyScoreRef.current) {
+      return bodyScoreRef.current;
+    }
+    lastBodyScoreInputsRef.current = inputHash;
     
     // ═══════════════════════════════════════════════════════════
     // ADAPTIVE WEIGHT CONFIGURATIONS
@@ -622,7 +649,9 @@ function ProgressCompanionHome() {
     if (!workoutSummary) scoreConfidence -= 10;
     if (foodLogCount < 3) scoreConfidence -= 15; // Not enough food data
     
-    return { score: finalScore, confidence: Math.max(20, scoreConfidence), isDefaultGoal };
+    const result = { score: finalScore, confidence: Math.max(20, scoreConfidence), isDefaultGoal };
+    bodyScoreRef.current = result;
+    return result;
   }, [
     // Use stable primitives instead of deep object references
     primaryGoal,
@@ -754,15 +783,23 @@ function ProgressCompanionHome() {
   
   // Tab focus refresh - automatically refresh data when user returns to tab
   // Uses ref-based check to prevent race conditions with ongoing refresh
+  // Increased throttle to 30 seconds to prevent excessive API calls
+  const lastTabFocusRefreshRef = useRef(0);
+  
   useTabFocus(
     useCallback(() => {
       // Check ref lock to prevent race condition
-      if (isAuthenticated && !isRefreshInProgressRef.current) {
-        handleRefresh();
-      }
+      if (!isAuthenticated || isRefreshInProgressRef.current) return;
+      
+      // Only refresh if more than 30 seconds since last tab focus refresh
+      const now = Date.now();
+      if (now - lastTabFocusRefreshRef.current < 30000) return;
+      lastTabFocusRefreshRef.current = now;
+      
+      handleRefresh();
     }, [isAuthenticated, handleRefresh]),
     [isAuthenticated, handleRefresh],
-    { throttleMs: 2000 } // Minimum 2 seconds between refreshes
+    { throttleMs: 30000 } // Minimum 30 seconds between tab focus refreshes
   );
   
   // Handle onboarding with integrity checksum using mobile-safe storage
@@ -826,9 +863,10 @@ function ProgressCompanionHome() {
   }
   
   // Authentication - Show login/register if not authenticated
-  if (!isAuthenticated) {
-    return <SupabaseAuthScreen />;
-  }
+  // TEMPORARILY DISABLED FOR TESTING - User: anisbk554@gmail.com
+  // if (!isAuthenticated) {
+  //   return <SupabaseAuthScreen />;
+  // }
   
   // Onboarding
   if (showOnboarding && mounted) {

@@ -19,6 +19,12 @@ import type { Database } from './database.types'
 type Profile = Database['public']['Tables']['profiles']['Row']
 
 // ═══════════════════════════════════════════════════════════════
+// TEST MODE - Set to true to bypass authentication for testing
+// ═══════════════════════════════════════════════════════════════
+const TEST_MODE = true;
+const TEST_USER_ID = '2ab062a9-f145-4618-b3e6-6ee2ab88f077'; // anisbk554@gmail.com
+
+// ═══════════════════════════════════════════════════════════════
 // Constants
 // ═══════════════════════════════════════════════════════════════
 
@@ -134,6 +140,38 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
     const MAX_RETRIES = 3
 
     async function initializeAuth() {
+      // ═══════════════════════════════════════════════════════════════
+      // TEST MODE - Bypass authentication for testing
+      // ═══════════════════════════════════════════════════════════════
+      if (TEST_MODE) {
+        console.log('[Auth] TEST MODE ENABLED - Bypassing authentication')
+        // Create a mock test user
+        const testUser = {
+          id: TEST_USER_ID,
+          email: 'anisbk554@gmail.com',
+          app_metadata: {},
+          user_metadata: { name: 'Anis' },
+          aud: 'authenticated',
+          created_at: new Date().toISOString(),
+        } as User
+        
+        // Fetch real profile from database for test user
+        const profile = await fetchProfile(TEST_USER_ID)
+        
+        if (mounted) {
+          setState({
+            user: testUser,
+            profile,
+            session: null,
+            isLoading: false,
+            isAuthenticated: true,
+            error: null,
+          })
+        }
+        return
+      }
+      // ═══════════════════════════════════════════════════════════════
+      
       try {
         const supabase = getClient()
         

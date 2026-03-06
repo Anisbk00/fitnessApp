@@ -101,6 +101,15 @@ export const RATE_LIMITS = {
     lockoutDurationMs: 5 * 60 * 1000,
     message: 'Too many requests.',
   },
+  // API read operations (user, targets, etc.) - generous for legitimate use
+  API_READ: {
+    windowMs: 60 * 1000,          // 1 minute
+    maxRequests: 120,            // 120 requests per minute (accounts for StrictMode double-renders)
+    blockDurationMs: 30 * 1000,  // 30 seconds block (short)
+    maxFailedAttempts: 30,
+    lockoutDurationMs: 2 * 60 * 1000, // 2 minutes lockout
+    message: 'Too many requests. Please wait a moment.',
+  },
 } as const
 
 // ═══════════════════════════════════════════════════════════════

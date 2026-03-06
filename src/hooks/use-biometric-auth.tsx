@@ -30,8 +30,8 @@ async function getDeviceAuth() {
   
   try {
     // @ts-expect-error - Optional dependency that may not be installed
-    const module = await import(/* webpackIgnore: true */ 'capacitor-device-auth');
-    return module?.DeviceAuth || null;
+    const deviceAuthModule = await import(/* webpackIgnore: true */ 'capacitor-device-auth');
+    return deviceAuthModule?.DeviceAuth || null;
   } catch {
     // Package not installed - this is expected for web builds
     return null;

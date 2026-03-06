@@ -45,7 +45,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
     }
 
-    // Rate limiting
+    // Rate limiting - use API_READ for generous limits (accounts for StrictMode double-renders)
     const rateLimitKey = createRateLimitKey(request, user.id)
     const rateLimitResult = checkRateLimit(rateLimitKey, RATE_LIMITS.API_READ)
     
