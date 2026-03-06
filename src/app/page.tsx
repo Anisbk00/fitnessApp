@@ -863,10 +863,9 @@ function ProgressCompanionHome() {
   }
   
   // Authentication - Show login/register if not authenticated
-  // TEMPORARILY DISABLED FOR TESTING - User: anisbk554@gmail.com
-  // if (!isAuthenticated) {
-  //   return <SupabaseAuthScreen />;
-  // }
+  if (!isAuthenticated) {
+    return <SupabaseAuthScreen />;
+  }
   
   // Onboarding
   if (showOnboarding && mounted) {

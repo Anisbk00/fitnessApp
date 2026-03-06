@@ -19,10 +19,12 @@ import type { Database } from './database.types'
 type Profile = Database['public']['Tables']['profiles']['Row']
 
 // ═══════════════════════════════════════════════════════════════
-// TEST MODE - Set to true to bypass authentication for testing
+// AUTO SIGN-IN - Automatically sign in with real credentials
+// Set to false to require manual login
 // ═══════════════════════════════════════════════════════════════
-const TEST_MODE = true;
-const TEST_USER_ID = '2ab062a9-f145-4618-b3e6-6ee2ab88f077'; // anisbk554@gmail.com
+const AUTO_SIGN_IN = true;
+const AUTO_SIGN_IN_EMAIL = 'anisbk554@gmail.com';
+const AUTO_SIGN_IN_PASSWORD = 'Anisbk554@gmail.com';
 
 // ═══════════════════════════════════════════════════════════════
 // Constants
@@ -141,55 +143,62 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
 
     async function initializeAuth() {
       // ═══════════════════════════════════════════════════════════════
-      // TEST MODE - Bypass authentication for testing
+      // AUTO SIGN-IN - Automatically authenticate with real credentials
       // ═══════════════════════════════════════════════════════════════
-      if (TEST_MODE) {
-        console.log('[Auth] TEST MODE ENABLED - Bypassing authentication')
-        // Create a mock test user with proper name
-        const testUser = {
-          id: TEST_USER_ID,
-          email: 'anisbk554@gmail.com',
-          app_metadata: {},
-          user_metadata: { name: 'Anis' },
-          aud: 'authenticated',
-          created_at: new Date().toISOString(),
-        } as User
+      if (AUTO_SIGN_IN) {
+        console.log('[Auth] AUTO SIGN-IN ENABLED - Attempting automatic authentication')
         
-        // Fetch real profile from database for test user
-        let profile = await fetchProfile(TEST_USER_ID)
-        
-        // If profile exists but has no name, use the test user's name
-        if (profile && !profile.name) {
-          profile = { ...profile, name: 'Anis' }
-        }
-        
-        // If no profile exists, create a mock one with the correct name
-        if (!profile) {
-          profile = {
-            id: TEST_USER_ID,
-            email: 'anisbk554@gmail.com',
-            name: 'Anis',
-            avatar_url: null,
-            timezone: 'UTC',
-            locale: 'en',
-            coaching_tone: 'balanced',
-            privacy_mode: false,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
+        try {
+          const supabase = getClient()
+          
+          // First check if there's already a valid session
+          const { data: { session: existingSession }, error: sessionError } = await supabase.auth.getSession()
+          
+          if (existingSession?.user) {
+            console.log('[Auth] Existing session found, using it')
+            const profile = await fetchProfile(existingSession.user.id)
+            if (mounted) {
+              setState({
+                user: existingSession.user,
+                profile,
+                session: existingSession,
+                isLoading: false,
+                isAuthenticated: true,
+                error: null,
+              })
+            }
+            return
           }
-        }
-        
-        if (mounted) {
-          setState({
-            user: testUser,
-            profile,
-            session: null,
-            isLoading: false,
-            isAuthenticated: true,
-            error: null,
+          
+          // No existing session - sign in with real credentials
+          console.log('[Auth] No existing session, signing in with real credentials...')
+          const { data: { session: newSession, user: newUser }, error: signInError } = await supabase.auth.signInWithPassword({
+            email: AUTO_SIGN_IN_EMAIL,
+            password: AUTO_SIGN_IN_PASSWORD,
           })
+          
+          if (signInError) {
+            console.error('[Auth] Auto sign-in failed:', signInError.message)
+            // Fall through to normal auth flow
+          } else if (newSession && newUser) {
+            console.log('[Auth] Auto sign-in successful!')
+            const profile = await fetchProfile(newUser.id)
+            if (mounted) {
+              setState({
+                user: newUser,
+                profile,
+                session: newSession,
+                isLoading: false,
+                isAuthenticated: true,
+                error: null,
+              })
+            }
+            return
+          }
+        } catch (error) {
+          console.error('[Auth] Auto sign-in exception:', error)
+          // Fall through to normal auth flow
         }
-        return
       }
       // ═══════════════════════════════════════════════════════════════
       
