@@ -145,7 +145,7 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
       // ═══════════════════════════════════════════════════════════════
       if (TEST_MODE) {
         console.log('[Auth] TEST MODE ENABLED - Bypassing authentication')
-        // Create a mock test user
+        // Create a mock test user with proper name
         const testUser = {
           id: TEST_USER_ID,
           email: 'anisbk554@gmail.com',
@@ -156,7 +156,28 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
         } as User
         
         // Fetch real profile from database for test user
-        const profile = await fetchProfile(TEST_USER_ID)
+        let profile = await fetchProfile(TEST_USER_ID)
+        
+        // If profile exists but has no name, use the test user's name
+        if (profile && !profile.name) {
+          profile = { ...profile, name: 'Anis' }
+        }
+        
+        // If no profile exists, create a mock one with the correct name
+        if (!profile) {
+          profile = {
+            id: TEST_USER_ID,
+            email: 'anisbk554@gmail.com',
+            name: 'Anis',
+            avatar_url: null,
+            timezone: 'UTC',
+            locale: 'en',
+            coaching_tone: 'balanced',
+            privacy_mode: false,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          }
+        }
         
         if (mounted) {
           setState({

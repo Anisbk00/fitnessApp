@@ -12,7 +12,8 @@ import { createClient } from '@/lib/supabase/server'
 import { 
   getOrCreateProfile, 
   updateProfile, 
-  getOrCreateUserSettings 
+  getOrCreateUserSettings,
+  getProfile,
 } from '@/lib/supabase/data-service'
 import { 
   checkRateLimit, 
@@ -30,6 +31,12 @@ import {
 } from '@/lib/optimistic-locking'
 
 // ═══════════════════════════════════════════════════════════════
+// TEST MODE - Same as in auth-context.tsx
+// ═══════════════════════════════════════════════════════════════
+const TEST_MODE = true;
+const TEST_USER_ID = '2ab062a9-f145-4618-b3e6-6ee2ab88f077'; // anisbk554@gmail.com
+
+// ═══════════════════════════════════════════════════════════════
 // GET /api/user - Get current user data from Supabase
 // ═══════════════════════════════════════════════════════════════
 
@@ -37,6 +44,80 @@ export async function GET(request: NextRequest) {
   const startTime = logger.logRequest('GET', '/api/user')
   
   try {
+    // ═══════════════════════════════════════════════════════════════
+    // TEST MODE - Bypass authentication for testing
+    // ═══════════════════════════════════════════════════════════════
+    if (TEST_MODE) {
+      logger.info('[API] TEST MODE ENABLED - Returning test user data')
+      
+      // Get profile from database
+      let profile = await getProfile(TEST_USER_ID)
+      
+      // If no profile exists, create a mock one
+      if (!profile) {
+        profile = {
+          id: TEST_USER_ID,
+          email: 'anisbk554@gmail.com',
+          name: 'Anis',
+          avatar_url: null,
+          timezone: 'UTC',
+          locale: 'en',
+          coaching_tone: 'balanced',
+          privacy_mode: false,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        }
+      }
+      
+      // Ensure name is set
+      if (!profile.name) {
+        profile = { ...profile, name: 'Anis' }
+      }
+      
+      const formattedUser = {
+        id: profile.id,
+        email: profile.email,
+        name: profile.name || 'Anis',
+        avatarUrl: profile.avatar_url,
+        timezone: profile.timezone,
+        locale: profile.locale,
+        coachingTone: profile.coaching_tone,
+        privacyMode: profile.privacy_mode ? 'private' : 'public',
+        createdAt: profile.created_at,
+        updatedAt: profile.updated_at,
+        UserProfile: {
+          userId: profile.id,
+          birthDate: null,
+          biologicalSex: null,
+          heightCm: null,
+          targetWeightKg: null,
+          activityLevel: 'moderate',
+          fitnessLevel: 'beginner',
+          primaryGoal: null,
+          targetDate: null,
+        },
+        UserSettings: {
+          id: 'default',
+          userId: profile.id,
+          theme: 'system',
+          notificationsEnabled: true,
+          emailNotifications: true,
+          pushNotifications: false,
+          language: 'en',
+          units: 'metric',
+        },
+        _count: {
+          Meal: 0,
+          Measurement: 0,
+          ProgressPhoto: 0,
+          Workout: 0,
+        },
+      };
+
+      return NextResponse.json({ user: formattedUser })
+    }
+    // ═══════════════════════════════════════════════════════════════
+    
     const supabase = await createClient()
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     
