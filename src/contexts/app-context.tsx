@@ -436,6 +436,24 @@ class TimeoutError extends Error {
 const AppContext = createContext<AppContextType | null>(null);
 
 // ═══════════════════════════════════════════════════════════════
+// TEST MODE - Same as in auth-context.tsx
+// ═══════════════════════════════════════════════════════════════
+const TEST_MODE = true;
+const TEST_USER_ID = '2ab062a9-f145-4618-b3e6-6ee2ab88f077';
+
+/**
+ * Helper to add test mode headers to fetch requests
+ * Only adds headers when TEST_MODE is true
+ */
+function getTestModeHeaders(): Record<string, string> {
+  if (!TEST_MODE) return {};
+  return {
+    'X-Test-Mode': 'true',
+    'X-Test-User-Id': TEST_USER_ID,
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════
 // Provider
 // ═══════════════════════════════════════════════════════════════
 
@@ -513,7 +531,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     // Skip if not authenticated
     try {
       setUserLoading(true);
-      const response = await fetch('/api/user');
+      const testHeaders = getTestModeHeaders();
+      const response = await fetch('/api/user', {
+        headers: {
+          ...testHeaders,
+        },
+      });
       
       // Handle authentication errors gracefully
       if (response.status === 401) {
@@ -557,7 +580,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const fetchTargets = useCallback(async () => {
     try {
       setTargetsLoading(true);
-      const response = await fetch('/api/targets');
+      const response = await fetch('/api/targets', {
+        headers: getTestModeHeaders(),
+      });
       if (!response.ok) throw new Error('Failed to fetch targets');
       const data = await response.json();
       
@@ -580,7 +605,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     try {
       if (showLoading) setNutritionLoading(true);
       const dateParam = new Date().toISOString().split('T')[0];
-      const response = await fetch(`/api/food-log?date=${dateParam}`);
+      const response = await fetch(`/api/food-log?date=${dateParam}`, {
+        headers: getTestModeHeaders(),
+      });
       if (!response.ok) throw new Error('Failed to fetch nutrition');
       const data = await response.json();
       
@@ -607,7 +634,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     try {
       if (showLoading) setFoodLogLoading(true);
       const dateParam = new Date().toISOString().split('T')[0];
-      const response = await fetch(`/api/food-log?date=${dateParam}`);
+      const response = await fetch(`/api/food-log?date=${dateParam}`, {
+        headers: getTestModeHeaders(),
+      });
       if (!response.ok) throw new Error('Failed to fetch food log');
       const data = await response.json();
       
@@ -628,7 +657,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const fetchMeasurements = useCallback(async () => {
     try {
       setMeasurementsLoading(true);
-      const response = await fetch('/api/measurements?type=weight&days=30');
+      const response = await fetch('/api/measurements?type=weight&days=30', {
+        headers: getTestModeHeaders(),
+      });
       if (!response.ok) throw new Error('Failed to fetch measurements');
       const data = await response.json();
       
@@ -647,7 +678,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const fetchWorkouts = useCallback(async () => {
     try {
       setWorkoutsLoading(true);
-      const response = await fetch('/api/workouts');
+      const response = await fetch('/api/workouts', {
+        headers: getTestModeHeaders(),
+      });
       if (!response.ok) throw new Error('Failed to fetch workouts');
       const data = await response.json();
       
@@ -667,7 +700,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     try {
       if (showLoading) setHydrationLoading(true);
       const dateParam = new Date().toISOString().split('T')[0];
-      const response = await fetch(`/api/measurements?type=water&date=${dateParam}`);
+      const response = await fetch(`/api/measurements?type=water&date=${dateParam}`, {
+        headers: getTestModeHeaders(),
+      });
       if (!response.ok) throw new Error('Failed to fetch hydration');
       const data = await response.json();
       
@@ -704,7 +739,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     try {
       if (showLoading) setStepsLoading(true);
       const dateParam = new Date().toISOString().split('T')[0];
-      const response = await fetch(`/api/measurements?type=steps&date=${dateParam}`);
+      const response = await fetch(`/api/measurements?type=steps&date=${dateParam}`, {
+        headers: getTestModeHeaders(),
+      });
       if (!response.ok) throw new Error('Failed to fetch steps');
       const data = await response.json();
       
@@ -743,7 +780,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     try {
       setAnalyticsLoading(true);
       setAnalyticsError(null);
-      const response = await fetch('/api/analytics?metric=weight&range=30d');
+      const response = await fetch('/api/analytics?metric=weight&range=30d', {
+        headers: getTestModeHeaders(),
+      });
       if (!response.ok) throw new Error('Failed to fetch analytics');
       const data = await response.json();
       
@@ -1534,9 +1573,18 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     
     // Only fetch data when authenticated
     if (isAuthenticated) {
-      initialLoadDone.current = false;
-      refreshAll().then(() => {
-        initialLoadDone.current = true;
+      // GUARD: Prevent re-fetching if already done OR in progress (React Strict Mode double-render)
+      if (initialLoadDone.current) {
+        console.log('[App] Initial load already done, skipping re-fetch')
+        return
+      }
+      // Mark as in-progress immediately (synchronously) to prevent re-entry
+      initialLoadDone.current = true;
+      
+      refreshAll().catch(err => {
+        console.error('[App] Initial load failed:', err)
+        // Allow retry on failure
+        initialLoadDone.current = false;
       });
     } else {
       // Reset loading states when not authenticated
@@ -1551,7 +1599,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       setStepsLoading(false);
       setAnalyticsLoading(false);
     }
-  }, [isAuthenticated, authLoading, refreshAll]);
+    // We only want this effect to run when auth state changes, not when refreshAll reference changes
+  }, [isAuthenticated, authLoading]);
   
   // ═══════════════════════════════════════════════════════════════
   // Tab Focus Synchronization - Refresh data when user returns to tab

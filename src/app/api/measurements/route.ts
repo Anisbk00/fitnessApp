@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { 
   getBodyMetrics, 
   addBodyMetric, 
@@ -8,8 +8,73 @@ import {
   getOrCreateProfile
 } from '@/lib/supabase/data-service';
 
+// ═══════════════════════════════════════════════════════════════
+// TEST MODE - Same as in auth-context.tsx
+// ═══════════════════════════════════════════════════════════════
+const TEST_MODE = true;
+const TEST_USER_ID = '2ab062a9-f145-4618-b3e6-6ee2ab88f077';
+
 // GET /api/measurements - Get measurements from Supabase
 export async function GET(request: NextRequest) {
+  // ═══════════════════════════════════════════════════════════════
+  // TEST MODE - Check for test mode headers
+  // ═══════════════════════════════════════════════════════════════
+  const isTestMode = TEST_MODE && request.headers.get('X-Test-Mode') === 'true';
+  const testUserId = request.headers.get('X-Test-User-Id') || TEST_USER_ID;
+  
+  if (isTestMode) {
+    console.log('[API Measurements] TEST MODE - Bypassing auth for user:', testUserId);
+    
+    try {
+      const supabase = createAdminClient();
+      const { searchParams } = new URL(request.url);
+      const type = searchParams.get('type') || 'weight';
+      const days = parseInt(searchParams.get('days') || '30');
+      const dateParam = searchParams.get('date');
+      
+      let dateFilter: { date?: string; days?: number } = {};
+      if (dateParam) {
+        dateFilter = { date: dateParam };
+      } else {
+        dateFilter = { days };
+      }
+      
+      // Query directly with admin client
+      const { data: measurements, error } = await supabase
+        .from('body_metrics')
+        .select('*')
+        .eq('user_id', testUserId)
+        .eq('metric_type', type)
+        .order('captured_at', { ascending: false })
+        .limit(dateParam ? 10 : days);
+      
+      if (error) {
+        console.error('[API Measurements] TEST MODE - Query error:', error);
+        return NextResponse.json({ measurements: [], latest: null, previous: null, trend: null });
+      }
+      
+      const latest = measurements?.[0] || null;
+      const previous = measurements?.[1] || null;
+      
+      return NextResponse.json({ 
+        measurements: measurements || [], 
+        latest,
+        previous,
+        trend: latest && previous 
+          ? latest.value < previous.value ? 'down' 
+            : latest.value > previous.value ? 'up' 
+            : 'stable'
+          : null,
+      });
+    } catch (error) {
+      console.error('[API Measurements] TEST MODE - Error:', error);
+      return NextResponse.json({ measurements: [], latest: null, previous: null, trend: null });
+    }
+  }
+  
+  // ═══════════════════════════════════════════════════════════════
+  // NORMAL AUTH FLOW
+  // ═══════════════════════════════════════════════════════════════
   try {
     const supabase = await createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();

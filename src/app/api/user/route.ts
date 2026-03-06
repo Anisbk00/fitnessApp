@@ -3,16 +3,17 @@
  * 
  * Handles user data operations using Supabase.
  * Includes rate limiting, optimistic locking, and request logging.
+ * Supports TEST_MODE for development/testing without auth.
  * 
  * @module api/user
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { 
   getOrCreateProfile, 
   updateProfile, 
-  getOrCreateUserSettings 
+  getOrCreateUserSettings,
 } from '@/lib/supabase/data-service'
 import { 
   checkRateLimit, 
@@ -30,11 +31,140 @@ import {
 } from '@/lib/optimistic-locking'
 
 // ═══════════════════════════════════════════════════════════════
+// TEST MODE - Same as in auth-context.tsx
+// ═══════════════════════════════════════════════════════════════
+const TEST_MODE = true;
+const TEST_USER_ID = '2ab062a9-f145-4618-b3e6-6ee2ab88f077';
+
+// ═══════════════════════════════════════════════════════════════
 // GET /api/user - Get current user data from Supabase
 // ═══════════════════════════════════════════════════════════════
 
 export async function GET(request: NextRequest) {
   const startTime = logger.logRequest('GET', '/api/user')
+  
+  // ═══════════════════════════════════════════════════════════════
+  // TEST MODE - Check for test mode headers
+  // ═══════════════════════════════════════════════════════════════
+  const isTestMode = TEST_MODE && request.headers.get('X-Test-Mode') === 'true';
+  const testUserId = request.headers.get('X-Test-User-Id') || TEST_USER_ID;
+  
+  if (isTestMode) {
+    console.log('[API User] TEST MODE - Bypassing auth for user:', testUserId);
+    
+    try {
+      // Use admin client to bypass RLS (no auth session in test mode)
+      const supabase = createAdminClient()
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', testUserId)
+        .maybeSingle()
+      
+      if (profileError) {
+        console.error('[API User] TEST MODE - Profile fetch error:', profileError)
+        return NextResponse.json({ error: 'Failed to fetch test user' }, { status: 500 })
+      }
+      
+      if (!profile) {
+        console.warn('[API User] TEST MODE - No profile found for user:', testUserId)
+        // Return a default profile for test mode
+        return NextResponse.json({
+          user: {
+            id: testUserId,
+            email: 'anisbk554@gmail.com',
+            name: 'Anis',
+            avatarUrl: null,
+            timezone: 'UTC',
+            locale: 'en',
+            coachingTone: 'encouraging',
+            privacyMode: 'public',
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            UserProfile: {
+              userId: testUserId,
+              birthDate: null,
+              biologicalSex: null,
+              heightCm: null,
+              targetWeightKg: null,
+              activityLevel: 'moderate',
+              fitnessLevel: 'beginner',
+              primaryGoal: null,
+              targetDate: null,
+            },
+            UserSettings: {
+              id: 'test-settings',
+              userId: testUserId,
+              theme: 'system',
+              notificationsEnabled: true,
+              emailNotifications: true,
+              pushNotifications: true,
+              language: 'en',
+              units: 'metric',
+            },
+            _count: {
+              Meal: 0,
+              Measurement: 0,
+              ProgressPhoto: 0,
+              Workout: 0,
+            },
+          }
+        })
+      }
+      
+      console.log('[API User] TEST MODE - Profile loaded:', profile.name);
+      
+      // Return the actual profile from the database
+      return NextResponse.json({
+        user: {
+          id: profile.id,
+          email: profile.email,
+          name: profile.name,
+          avatarUrl: profile.avatar_url,
+          timezone: profile.timezone,
+          locale: profile.locale,
+          coachingTone: profile.coaching_tone,
+          privacyMode: profile.privacy_mode ? 'private' : 'public',
+          createdAt: profile.created_at,
+          updatedAt: profile.updated_at,
+          UserProfile: {
+            userId: profile.id,
+            birthDate: null,
+            biologicalSex: null,
+            heightCm: null,
+            targetWeightKg: null,
+            activityLevel: 'moderate',
+            fitnessLevel: 'beginner',
+            primaryGoal: null,
+            targetDate: null,
+          },
+          UserSettings: {
+            id: 'test-settings',
+            userId: profile.id,
+            theme: 'system',
+            notificationsEnabled: true,
+            emailNotifications: true,
+            pushNotifications: true,
+            language: 'en',
+            units: 'metric',
+          },
+          _count: {
+            Meal: 0,
+            Measurement: 0,
+            ProgressPhoto: 0,
+            Workout: 0,
+          },
+        }
+      })
+    } catch (error) {
+      console.error('[API User] TEST MODE - Error:', error)
+      return NextResponse.json({ error: 'Failed to fetch test user' }, { status: 500 })
+    }
+  }
+  
+  // ═══════════════════════════════════════════════════════════════
+  // NORMAL AUTH FLOW
+  // ═══════════════════════════════════════════════════════════════
   
   try {
     const supabase = await createClient()

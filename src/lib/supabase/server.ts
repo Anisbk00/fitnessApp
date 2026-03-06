@@ -9,8 +9,28 @@
 
 import { createServerClient } from '@supabase/ssr'
 import { createClient as createSupabaseClient } from '@supabase/supabase-js'
-import { cookies } from 'next/headers'
+import { cookies, headers } from 'next/headers'
 import type { Database } from './database.types'
+
+// ═══════════════════════════════════════════════════════════════
+// TEST MODE - Same as in auth-context.tsx
+// ═══════════════════════════════════════════════════════════════
+const TEST_MODE = true;
+const TEST_USER_ID = '2ab062a9-f145-4618-b3e6-6ee2ab88f077';
+
+/**
+ * Check if TEST_MODE headers are present in the request
+ */
+export async function isTestModeRequest(): Promise<{ isTestMode: boolean; testUserId: string }> {
+  try {
+    const headersList = await headers();
+    const isTestMode = TEST_MODE && headersList.get('X-Test-Mode') === 'true';
+    const testUserId = headersList.get('X-Test-User-Id') || TEST_USER_ID;
+    return { isTestMode, testUserId };
+  } catch {
+    return { isTestMode: false, testUserId: TEST_USER_ID };
+  }
+}
 
 /**
  * Create a Supabase client for server-side operations
@@ -52,8 +72,7 @@ export async function createClient() {
  * - Admin operations
  * - Webhook handlers
  * - Session revocation
- * 
- * Uses @supabase/supabase-js directly (not SSR) for admin operations
+ * - TEST MODE operations
  */
 export function createAdminClient() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -87,8 +106,25 @@ export async function getServerUser() {
 
 /**
  * Require authentication - throws if not authenticated
+ * In TEST_MODE with X-Test-Mode header, returns a mock user
  */
 export async function requireAuth() {
+  // Check for TEST_MODE request first
+  const { isTestMode, testUserId } = await isTestModeRequest();
+  
+  if (isTestMode) {
+    // Return a mock user for test mode
+    return {
+      id: testUserId,
+      email: 'anisbk554@gmail.com',
+      app_metadata: {},
+      user_metadata: { name: 'Test' },
+      aud: 'authenticated',
+      created_at: new Date().toISOString(),
+      role: 'authenticated',
+    };
+  }
+  
   const user = await getServerUser()
   
   if (!user) {

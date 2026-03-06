@@ -33,8 +33,10 @@ import {
   CloudOff,
   RefreshCw,
   AlertTriangle,
+  Info,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
 import { OnboardingFlow, type OnboardingData } from "@/components/fitness/onboarding-flow";
 import { AnalyticsPage } from "@/components/fitness/analytics-page";
 import { FoodsPage } from "@/components/fitness/foods-page";
@@ -1358,7 +1360,43 @@ function BodyIntelligenceCard({
           {/* Top Row: Score + Trend */}
           <div className="flex items-start justify-between mb-4">
             <div>
-              <p className="text-xs text-amber-600/70 dark:text-amber-400/70 uppercase tracking-widest font-medium">Body Intelligence</p>
+              <div className="flex items-center gap-1.5">
+                <p className="text-xs text-amber-600/70 dark:text-amber-400/70 uppercase tracking-widest font-medium">Body Intelligence</p>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button 
+                      className="rounded-full p-0.5 hover:bg-amber-100 dark:hover:bg-amber-800/30 transition-colors"
+                      aria-label="What is Body Intelligence?"
+                    >
+                      <Info className="w-3.5 h-3.5 text-amber-500/70 dark:text-amber-400/70" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent 
+                    side="right" 
+                    className="max-w-xs bg-popover text-popover-foreground border shadow-lg z-50"
+                  >
+                    <div className="space-y-2">
+                      <p className="font-semibold text-sm">What is Body Intelligence?</p>
+                      <p className="text-xs text-muted-foreground leading-relaxed">
+                        Body Intelligence is a holistic score (0-100) that reflects how well you&apos;re supporting your body&apos;s needs. 
+                        It combines your nutrition adherence, hydration, workout activity, and consistency streak.
+                      </p>
+                      <div className="pt-1 border-t text-xs text-muted-foreground">
+                        <p className="font-medium mb-1">Score factors:</p>
+                        <ul className="space-y-0.5">
+                          <li>• <span className="text-amber-600 dark:text-amber-400">Nutrition</span> - calorie & protein targets</li>
+                          <li>• <span className="text-cyan-600 dark:text-cyan-400">Hydration</span> - water intake</li>
+                          <li>• <span className="text-orange-600 dark:text-orange-400">Activity</span> - workout calories burned</li>
+                          <li>• <span className="text-yellow-600 dark:text-yellow-400">Streak</span> - consecutive days logged</li>
+                        </ul>
+                      </div>
+                      <p className="text-[10px] text-muted-foreground italic">
+                        Weights adapt based on your primary goal (fat loss, muscle gain, etc.)
+                      </p>
+                    </div>
+                  </TooltipContent>
+                </Tooltip>
+              </div>
               <div className="flex items-baseline gap-1 mt-1">
                 <motion.span 
                   className={cn("text-4xl font-bold tracking-tight bg-gradient-to-r bg-clip-text text-transparent", getScoreColor(bodyScore))}

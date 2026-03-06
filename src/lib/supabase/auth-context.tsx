@@ -19,10 +19,20 @@ import type { Database } from './database.types'
 type Profile = Database['public']['Tables']['profiles']['Row']
 
 // ═══════════════════════════════════════════════════════════════
+// TEST MODE - Bypass ALL Supabase auth for testing
+// Set TEST_MODE = false to require normal authentication
+// ═══════════════════════════════════════════════════════════════
+const TEST_MODE = true;
+const TEST_USER_ID = '2ab062a9-f145-4618-b3e6-6ee2ab88f077'; // anisbk554@gmail.com
+const TEST_USER_EMAIL = 'anisbk554@gmail.com';
+const TEST_USER_NAME = 'Anis';
+
+// ═══════════════════════════════════════════════════════════════
 // AUTO SIGN-IN - Automatically sign in with real credentials
+// Only used when TEST_MODE = false
 // Set to false to require manual login
 // ═══════════════════════════════════════════════════════════════
-const AUTO_SIGN_IN = true;
+const AUTO_SIGN_IN = false;
 const AUTO_SIGN_IN_EMAIL = 'anisbk554@gmail.com';
 const AUTO_SIGN_IN_PASSWORD = 'Anisbk554@gmail.com';
 
@@ -100,6 +110,9 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
   // Using timestamp approach for more reliable protection
   const lastSignInAttemptRef = useRef(0)
   const SIGN_IN_COOLDOWN = 3000 // 3 seconds cooldown after sign-in attempt
+  
+  // Track if TEST_MODE initialization is complete (prevents re-initialization loop)
+  const testModeInitDoneRef = useRef(false)
 
   // ─── Fetch User Profile with Retry ───────────────────────────────
   const fetchProfile = useCallback(async (userId: string): Promise<Profile | null> => {
@@ -143,7 +156,136 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
 
     async function initializeAuth() {
       // ═══════════════════════════════════════════════════════════════
+      // TEST MODE - Bypass ALL Supabase auth, set user directly
+      // This avoids IndexedDB lock issues in React Strict Mode
+      // ═══════════════════════════════════════════════════════════════
+      if (TEST_MODE) {
+        // GUARD: Prevent re-initialization in React Strict Mode
+        if (testModeInitDoneRef.current) {
+          console.log('[Auth] TEST MODE - Already initialized, skipping')
+          return
+        }
+        testModeInitDoneRef.current = true
+        
+        console.log('[Auth] TEST MODE ENABLED - Bypassing Supabase auth')
+        
+        // Create a mock user object - set IMMEDIATELY (synchronously) to prevent loading flash
+        const testUser = {
+          id: TEST_USER_ID,
+          email: TEST_USER_EMAIL,
+          aud: 'authenticated',
+          role: 'authenticated',
+          email_confirmed_at: new Date().toISOString(),
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          app_metadata: {},
+          user_metadata: { name: TEST_USER_NAME },
+          confirmation_sent_at: null,
+          confirmed_at: new Date().toISOString(),
+          last_sign_in_at: new Date().toISOString(),
+          identities: [],
+          factors: [],
+        } as User
+        
+        // Create a mock session
+        const testSession = {
+          access_token: 'test-access-token',
+          refresh_token: 'test-refresh-token',
+          expires_in: 3600,
+          expires_at: Math.floor(Date.now() / 1000) + 3600,
+          token_type: 'bearer',
+          user: testUser,
+        } as Session
+        
+        // Set authenticated state immediately
+        setState({
+          user: testUser,
+          profile: null, // Will be fetched by API
+          session: testSession,
+          isLoading: false,
+          isAuthenticated: true,
+          error: null,
+        })
+        
+        // Fetch profile in background (uses server-side auth which works fine)
+        try {
+          // Use a direct API call instead of Supabase client to fetch profile
+          const response = await fetch('/api/user?testUserId=' + TEST_USER_ID, {
+            headers: {
+              'X-Test-Mode': 'true',
+              'X-Test-User-Id': TEST_USER_ID,
+            },
+          })
+          
+          if (response.ok) {
+            const data = await response.json()
+            if (mounted && data.user) {
+              setState(prev => ({
+                ...prev,
+                profile: {
+                  id: data.user.id,
+                  name: data.user.name,
+                  email: data.user.email,
+                  avatar_url: data.user.avatarUrl,
+                  timezone: data.user.timezone,
+                  locale: data.user.locale,
+                  coaching_tone: data.user.coachingTone,
+                  privacy_mode: data.user.privacyMode === 'private',
+                  created_at: data.user.createdAt,
+                  updated_at: data.user.updatedAt,
+                } as Profile,
+              }))
+              console.log('[Auth] TEST MODE - Profile loaded:', data.user.name)
+            }
+          } else {
+            console.warn('[Auth] TEST MODE - Could not fetch profile, using fallback')
+            // Use fallback profile with test user name
+            if (mounted) {
+              setState(prev => ({
+                ...prev,
+                profile: {
+                  id: TEST_USER_ID,
+                  name: TEST_USER_NAME,
+                  email: TEST_USER_EMAIL,
+                  avatar_url: null,
+                  timezone: 'UTC',
+                  locale: 'en',
+                  coaching_tone: 'encouraging',
+                  privacy_mode: false,
+                  created_at: new Date().toISOString(),
+                  updated_at: new Date().toISOString(),
+                } as Profile,
+              }))
+            }
+          }
+        } catch (error) {
+          console.warn('[Auth] TEST MODE - Profile fetch error, using fallback:', error)
+          // Use fallback profile
+          if (mounted) {
+            setState(prev => ({
+              ...prev,
+              profile: {
+                id: TEST_USER_ID,
+                name: TEST_USER_NAME,
+                email: TEST_USER_EMAIL,
+                avatar_url: null,
+                timezone: 'UTC',
+                locale: 'en',
+                coaching_tone: 'encouraging',
+                privacy_mode: false,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+              } as Profile,
+            }))
+          }
+        }
+        
+        return // Skip all other auth logic
+      }
+      
+      // ═══════════════════════════════════════════════════════════════
       // AUTO SIGN-IN - Automatically authenticate with real credentials
+      // Only used when TEST_MODE = false
       // ═══════════════════════════════════════════════════════════════
       if (AUTO_SIGN_IN) {
         console.log('[Auth] AUTO SIGN-IN ENABLED - Attempting automatic authentication')

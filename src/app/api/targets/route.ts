@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { nanoid } from 'nanoid';
 import { 
   calculatePersonalizedTargets,
@@ -13,10 +13,114 @@ import {
 import { getOrCreateProfile, getBodyMetrics, getGoals } from '@/lib/supabase/data-service';
 
 // ═══════════════════════════════════════════════════════════════
+// TEST MODE - Same as in other API routes
+// ═══════════════════════════════════════════════════════════════
+const TEST_MODE = true;
+const TEST_USER_ID = '2ab062a9-f145-4618-b3e6-6ee2ab88f077';
+
+// ═══════════════════════════════════════════════════════════════
 // GET - Calculate personalized targets
 // ═══════════════════════════════════════════════════════════════
 
 export async function GET(request: NextRequest) {
+  // ═══════════════════════════════════════════════════════════════
+  // TEST MODE - Check for test mode headers
+  // ═══════════════════════════════════════════════════════════════
+  const isTestMode = TEST_MODE && request.headers.get('X-Test-Mode') === 'true';
+  const testUserId = request.headers.get('X-Test-User-Id') || TEST_USER_ID;
+  
+  if (isTestMode) {
+    console.log('[API Targets] TEST MODE - Bypassing auth for user:', testUserId);
+    
+    try {
+      const supabase = createAdminClient();
+      
+      // Get profile
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', testUserId)
+        .single();
+      
+      // Get latest weight
+      const { data: weightMetrics } = await supabase
+        .from('body_metrics')
+        .select('*')
+        .eq('user_id', testUserId)
+        .eq('metric_type', 'weight')
+        .order('captured_at', { ascending: false })
+        .limit(1);
+      
+      const latestWeight = weightMetrics?.[0];
+      
+      // Build profile input
+      const profileInput: UserProfileInput = {
+        weightKg: latestWeight?.value || null,
+        heightCm: null,
+        birthDate: null,
+        biologicalSex: null,
+        activityLevel: 'moderate',
+        fitnessLevel: 'beginner',
+        primaryGoal: 'maintenance',
+        targetWeightKg: null,
+        targetDate: null,
+      };
+      
+      const targets = calculatePersonalizedTargets(profileInput);
+      
+      return NextResponse.json({
+        targets: {
+          ...targets,
+          _provenance: {
+            source: 'calculated',
+            modelName: 'PersonalizedTargetsEngine',
+            version: '1.0',
+            timestamp: new Date().toISOString(),
+            confidence: targets.confidence,
+          },
+        },
+        profile: {
+          hasCompleteProfile: false,
+          hasWeight: !!latestWeight,
+          hasHeight: false,
+          hasAge: false,
+          hasSex: false,
+          completionPercentage: Math.round(targets.confidence * 100),
+        },
+        metrics: {
+          bmi: null,
+          bmiCategory: null,
+          idealWeightRange: null,
+        },
+        descriptions: {
+          goal: getGoalDescription(profileInput.primaryGoal, targets.calorieAdjustment),
+          activity: getActivityDescription(profileInput.activityLevel),
+        },
+        userData: {
+          weight: latestWeight ? {
+            value: latestWeight.value,
+            unit: latestWeight.unit,
+            capturedAt: latestWeight.captured_at,
+          } : null,
+          height: null,
+          age: null,
+          biologicalSex: null,
+          activityLevel: profileInput.activityLevel,
+          fitnessLevel: profileInput.fitnessLevel,
+          primaryGoal: profileInput.primaryGoal,
+          targetWeight: null,
+          targetDate: null,
+        },
+      });
+    } catch (error) {
+      console.error('[API Targets] TEST MODE - Error:', error);
+      return NextResponse.json({ error: 'Failed to calculate targets' }, { status: 500 });
+    }
+  }
+  
+  // ═══════════════════════════════════════════════════════════════
+  // NORMAL AUTH FLOW
+  // ═══════════════════════════════════════════════════════════════
   try {
     const supabase = await createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
