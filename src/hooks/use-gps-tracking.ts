@@ -255,56 +255,7 @@ export function useGPSTracking(
     checkIncompleteSessions();
   }, []);
   
-  const resumeIncompleteSession = useCallback(async () => {
-    if (!incompleteSession) return;
-    
-    const points = incompleteSession.routeData ? JSON.parse(incompleteSession.routeData) : [];
-    const laps = incompleteSession.splits ? JSON.parse(incompleteSession.splits) : [];
-    
-    const resumedSession: TrackingSession = {
-      id: incompleteSession.tempId,
-      activityType: incompleteSession.activityType,
-      startedAt: new Date(incompleteSession.startedAt).getTime(),
-      points,
-      laps,
-      status: 'active',
-      isOffline: incompleteSession.offlineMode || false,
-      totalDistance: incompleteSession.distanceMeters || 0,
-      totalDuration: (Date.now() - new Date(incompleteSession.startedAt).getTime()) / 1000,
-      movingTime: 0,
-      elevationGain: incompleteSession.elevationGain || 0,
-      elevationLoss: incompleteSession.elevationLoss || 0,
-      avgSpeed: incompleteSession.avgSpeed || 0,
-      avgPace: incompleteSession.avgPace || 0,
-      calories: incompleteSession.caloriesBurned || 0,
-      avgHeartRate: incompleteSession.avgHeartRate,
-      avgCadence: incompleteSession.avgCadence,
-    };
-    
-    setSession(resumedSession);
-    setIsTracking(true);
-    setIncompleteSession(null);
-    setGpsError(null);
-    
-    // Restart GPS watcher
-    watchIdRef.current = navigator.geolocation.watchPosition(
-      handlePosition,
-      handleError,
-      {
-        enableHighAccuracy: !config.lowPowerMode,
-        timeout: 30000,
-        maximumAge: 0,
-      }
-    );
-    
-    // Request wake lock
-    await requestWakeLock();
-    
-    // Haptic feedback
-    if (navigator.vibrate) {
-      navigator.vibrate([100, 50, 100]);
-    }
-  }, [incompleteSession, handlePosition, handleError, config.lowPowerMode, requestWakeLock]);
+  // Note: resumeIncompleteSession is defined later after handlePosition/handleError are defined
   
   const discardIncompleteSession = useCallback(async () => {
     if (incompleteSession) {
@@ -445,6 +396,61 @@ export function useGPSTracking(
     
     setGpsError(errorMessage);
   }, []);
+  
+  // ═══════════════════════════════════════════════════════════════
+  // Resume Incomplete Session (defined after handlePosition/handleError)
+  // ═══════════════════════════════════════════════════════════════
+  
+  const resumeIncompleteSession = useCallback(async () => {
+    if (!incompleteSession) return;
+    
+    const points = incompleteSession.routeData ? JSON.parse(incompleteSession.routeData) : [];
+    const laps = incompleteSession.splits ? JSON.parse(incompleteSession.splits) : [];
+    
+    const resumedSession: TrackingSession = {
+      id: incompleteSession.tempId,
+      activityType: incompleteSession.activityType,
+      startedAt: new Date(incompleteSession.startedAt).getTime(),
+      points,
+      laps,
+      status: 'active',
+      isOffline: incompleteSession.offlineMode || false,
+      totalDistance: incompleteSession.distanceMeters || 0,
+      totalDuration: (Date.now() - new Date(incompleteSession.startedAt).getTime()) / 1000,
+      movingTime: 0,
+      elevationGain: incompleteSession.elevationGain || 0,
+      elevationLoss: incompleteSession.elevationLoss || 0,
+      avgSpeed: incompleteSession.avgSpeed || 0,
+      avgPace: incompleteSession.avgPace || 0,
+      calories: incompleteSession.caloriesBurned || 0,
+      avgHeartRate: incompleteSession.avgHeartRate,
+      avgCadence: incompleteSession.avgCadence,
+    };
+    
+    setSession(resumedSession);
+    setIsTracking(true);
+    setIncompleteSession(null);
+    setGpsError(null);
+    
+    // Restart GPS watcher
+    watchIdRef.current = navigator.geolocation.watchPosition(
+      handlePosition,
+      handleError,
+      {
+        enableHighAccuracy: !config.lowPowerMode,
+        timeout: 30000,
+        maximumAge: 0,
+      }
+    );
+    
+    // Request wake lock
+    await requestWakeLock();
+    
+    // Haptic feedback
+    if (navigator.vibrate) {
+      navigator.vibrate([100, 50, 100]);
+    }
+  }, [incompleteSession, handlePosition, handleError, config.lowPowerMode, requestWakeLock]);
   
   // ═══════════════════════════════════════════════════════════════
   // Session Persistence
