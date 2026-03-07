@@ -117,7 +117,9 @@ export async function POST(request: NextRequest) {
       'steps': 'steps',
     };
     
-    const measurementType = typeMapping[body.type] || body.type;
+    // Accept both 'type' and 'measurementType' field names
+    const inputType = body.type || body.measurementType;
+    const measurementType = typeMapping[inputType] || inputType;
     const unit = body.unit || (measurementType === 'water' ? 'ml' : measurementType === 'steps' ? 'count' : 'kg');
     
     // Generate unique ID
