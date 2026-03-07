@@ -1,107 +1,54 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient, createAdminClient } from '@/lib/supabase/server';
-import { 
-  getFoodLogs, 
-  addFoodLog, 
-  updateFoodLog, 
-  deleteFoodLog,
-  getNutritionTotals,
-  getOrCreateProfile
-} from '@/lib/supabase/data-service';
+import { db } from '@/lib/db';
+import { requireAuth } from '@/lib/supabase/server';
 
 // ═══════════════════════════════════════════════════════════════
-// TEST MODE - Same as in auth-context.tsx
+// TEST MODE - Use local Prisma database
 // ═══════════════════════════════════════════════════════════════
 const TEST_MODE = true;
-const TEST_USER_ID = '2ab062a9-f145-4618-b3e6-6ee2ab88f077';
 
-// GET /api/food-log - Get food log entries from Supabase
+// GET /api/food-log - Get food log entries
 export async function GET(request: NextRequest) {
-  // ═══════════════════════════════════════════════════════════════
-  // TEST MODE - Check for test mode headers
-  // ═══════════════════════════════════════════════════════════════
-  const isTestMode = TEST_MODE && request.headers.get('X-Test-Mode') === 'true';
-  const testUserId = request.headers.get('X-Test-User-Id') || TEST_USER_ID;
-  
-  if (isTestMode) {
-    console.log('[API Food-Log] TEST MODE - Bypassing auth for user:', testUserId);
-    
-    try {
-      const supabase = createAdminClient();
-      const { searchParams } = new URL(request.url);
-      const date = searchParams.get('date') || new Date().toISOString().split('T')[0];
-      
-      // Query food logs directly with admin client
-      const { data: entries, error } = await supabase
-        .from('food_logs')
-        .select('*')
-        .eq('user_id', testUserId)
-        .gte('logged_at', `${date}T00:00:00Z`)
-        .lte('logged_at', `${date}T23:59:59Z`)
-        .order('logged_at', { ascending: false });
-      
-      if (error) {
-        console.error('[API Food-Log] TEST MODE - Query error:', error);
-        return NextResponse.json({ entries: [], totals: { calories: 0, protein: 0, carbs: 0, fat: 0 } });
-      }
-      
-      // Calculate totals
-      const totals = (entries || []).reduce((acc, entry) => ({
-        calories: acc.calories + (entry.calories || 0),
-        protein: acc.protein + (entry.protein || 0),
-        carbs: acc.carbs + (entry.carbs || 0),
-        fat: acc.fat + (entry.fat || 0),
-      }), { calories: 0, protein: 0, carbs: 0, fat: 0 });
-      
-      // Format entries
-      const formattedEntries = (entries || []).map(entry => ({
-        id: entry.id,
-        foodId: entry.food_id,
-        quantity: entry.quantity,
-        unit: entry.unit,
-        calories: entry.calories,
-        protein: entry.protein,
-        carbs: entry.carbs,
-        fat: entry.fat,
-        source: entry.source,
-        loggedAt: entry.logged_at,
-        rationale: entry.notes,
-        food: entry.food_name ? { id: entry.food_id || 'unknown', name: entry.food_name } : null,
-      }));
-      
-      return NextResponse.json({ entries: formattedEntries, totals });
-    } catch (error) {
-      console.error('[API Food-Log] TEST MODE - Error:', error);
-      return NextResponse.json({ entries: [], totals: { calories: 0, protein: 0, carbs: 0, fat: 0 } });
-    }
-  }
-  
-  // ═══════════════════════════════════════════════════════════════
-  // NORMAL AUTH FLOW
-  // ═══════════════════════════════════════════════════════════════
   try {
-    const supabase = await createClient();
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    // In TEST_MODE, requireAuth returns mock user; otherwise validates real auth
+    const user = await requireAuth();
     
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
-    }
-
-    // Ensure profile exists
-    await getOrCreateProfile(user);
-
     const { searchParams } = new URL(request.url);
     const date = searchParams.get('date') || new Date().toISOString().split('T')[0];
-
-    const entries = await getFoodLogs(user.id, date);
-
-    // Calculate daily totals
-    const totals = await getNutritionTotals(user.id, date);
-
+    
+    // Get start and end of day
+    const startOfDay = new Date(`${date}T00:00:00.000Z`);
+    const endOfDay = new Date(`${date}T23:59:59.999Z`);
+    
+    // Query food logs from local Prisma database
+    const entries = await db.foodLogEntry.findMany({
+      where: {
+        userId: user.id,
+        loggedAt: {
+          gte: startOfDay,
+          lte: endOfDay,
+        },
+      },
+      include: {
+        Food: {
+          select: { id: true, name: true }
+        }
+      },
+      orderBy: { loggedAt: 'desc' }
+    });
+    
+    // Calculate totals
+    const totals = entries.reduce((acc, entry) => ({
+      calories: acc.calories + (entry.calories || 0),
+      protein: acc.protein + (entry.protein || 0),
+      carbs: acc.carbs + (entry.carbs || 0),
+      fat: acc.fat + (entry.fat || 0),
+    }), { calories: 0, protein: 0, carbs: 0, fat: 0 });
+    
     // Format entries for compatibility
     const formattedEntries = entries.map(entry => ({
       id: entry.id,
-      foodId: entry.food_id,
+      foodId: entry.foodId,
       quantity: entry.quantity,
       unit: entry.unit,
       calories: entry.calories,
@@ -109,31 +56,31 @@ export async function GET(request: NextRequest) {
       carbs: entry.carbs,
       fat: entry.fat,
       source: entry.source,
-      loggedAt: entry.logged_at,
-      rationale: entry.notes,
-      food: entry.food_name ? { id: entry.food_id || 'unknown', name: entry.food_name } : null,
+      loggedAt: entry.loggedAt.toISOString(),
+      rationale: entry.rationale,
+      food: entry.Food ? { id: entry.Food.id, name: entry.Food.name } : null,
     }));
-
+    
     return NextResponse.json({ entries: formattedEntries, totals });
   } catch (error) {
     console.error('Error fetching food log:', error);
+    
+    if (TEST_MODE) {
+      // Return empty data in TEST_MODE on error
+      return NextResponse.json({ 
+        entries: [], 
+        totals: { calories: 0, protein: 0, carbs: 0, fat: 0 } 
+      });
+    }
+    
     return NextResponse.json({ error: 'Failed to fetch food log' }, { status: 500 });
   }
 }
 
-// POST /api/food-log - Log a food entry to Supabase
+// POST /api/food-log - Log a food entry
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
-    }
-
-    // Ensure profile exists
-    await getOrCreateProfile(user);
-
+    const user = await requireAuth();
     const body = await request.json();
     
     // Validate required fields
@@ -143,53 +90,37 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
-
-    // Handle food_id - check if it exists in foods table or if it's from global_foods
-    // IDs from global_foods should NOT be passed to food_logs.food_id due to FK constraint
-    // Instead, we store just the food_name for global foods
-    let foodId: string | null = null;
     
-    if (body.foodId && body.source !== 'global') {
-      // Check if this foodId exists in the foods table
-      const { data: existingFood } = await supabase
-        .from('foods')
-        .select('id')
-        .eq('id', body.foodId)
-        .maybeSingle();
-      
-      if (existingFood) {
-        foodId = body.foodId;
+    // Generate unique ID
+    const id = `fle_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    
+    // Create entry in local Prisma database
+    const entry = await db.foodLogEntry.create({
+      data: {
+        id,
+        userId: user.id,
+        foodId: body.foodId || null,
+        quantity: parseFloat(body.quantity) || 0,
+        unit: body.unit || 'g',
+        calories: parseFloat(body.calories) || 0,
+        protein: parseFloat(body.protein) || 0,
+        carbs: parseFloat(body.carbs) || 0,
+        fat: parseFloat(body.fat) || 0,
+        source: body.source || 'manual',
+        rationale: body.rationale || body.notes || null,
+        loggedAt: body.loggedAt ? new Date(body.loggedAt) : new Date(),
+      },
+      include: {
+        Food: {
+          select: { id: true, name: true }
+        }
       }
-    }
-    // For global foods or non-existent food IDs, we store null and use food_name instead
-
-    const entry = await addFoodLog(user.id, {
-      food_id: foodId,
-      food_name: body.foodName || null,
-      quantity: parseFloat(body.quantity) || 0,
-      unit: body.unit || 'g',
-      calories: parseFloat(body.calories) || 0,
-      protein: parseFloat(body.protein) || 0,
-      carbs: parseFloat(body.carbs) || 0,
-      fat: parseFloat(body.fat) || 0,
-      meal_type: body.mealType || null,
-      source: body.source || 'manual',
-      photo_url: body.photoUrl || null,
-      logged_at: body.loggedAt ? new Date(body.loggedAt).toISOString() : new Date().toISOString(),
-      notes: body.rationale || body.notes || null,
     });
-
-    if (!entry) {
-      return NextResponse.json(
-        { error: 'Failed to create food log entry' },
-        { status: 500 }
-      );
-    }
-
-    // Format response for compatibility
+    
+    // Format response
     const formattedEntry = {
       id: entry.id,
-      foodId: entry.food_id,
+      foodId: entry.foodId,
       quantity: entry.quantity,
       unit: entry.unit,
       calories: entry.calories,
@@ -197,11 +128,11 @@ export async function POST(request: NextRequest) {
       carbs: entry.carbs,
       fat: entry.fat,
       source: entry.source,
-      loggedAt: entry.logged_at,
-      rationale: entry.notes,
-      food: entry.food_name ? { id: entry.food_id || 'unknown', name: entry.food_name } : null,
+      loggedAt: entry.loggedAt.toISOString(),
+      rationale: entry.rationale,
+      food: entry.Food ? { id: entry.Food.id, name: entry.Food.name } : null,
     };
-
+    
     return NextResponse.json({ entry: formattedEntry });
   } catch (error) {
     console.error('Error creating food log entry:', error);
@@ -209,29 +140,31 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// DELETE /api/food-log - Delete a food log entry from Supabase
+// DELETE /api/food-log - Delete a food log entry
 export async function DELETE(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const user = await requireAuth();
     
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
-    }
-
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
     
     if (!id) {
       return NextResponse.json({ error: 'Entry ID required' }, { status: 400 });
     }
-
-    const success = await deleteFoodLog(user.id, id);
     
-    if (!success) {
+    // Verify ownership and delete
+    const existingEntry = await db.foodLogEntry.findFirst({
+      where: { id, userId: user.id }
+    });
+    
+    if (!existingEntry) {
       return NextResponse.json({ error: 'Entry not found or access denied' }, { status: 404 });
     }
-
+    
+    await db.foodLogEntry.delete({
+      where: { id }
+    });
+    
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Error deleting food log entry:', error);
@@ -239,44 +172,53 @@ export async function DELETE(request: NextRequest) {
   }
 }
 
-// PUT /api/food-log - Update a food log entry in Supabase
+// PUT /api/food-log - Update a food log entry
 export async function PUT(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
-    }
-
+    const user = await requireAuth();
     const body = await request.json();
     const { id, ...updateData } = body;
-
+    
     if (!id) {
       return NextResponse.json({ error: 'Entry ID required' }, { status: 400 });
     }
-
-    // Map the update data to Supabase format
-    const supabaseUpdates: Record<string, unknown> = {};
     
-    if (updateData.quantity !== undefined) supabaseUpdates.quantity = parseFloat(updateData.quantity);
-    if (updateData.unit !== undefined) supabaseUpdates.unit = updateData.unit;
-    if (updateData.calories !== undefined) supabaseUpdates.calories = parseFloat(updateData.calories);
-    if (updateData.protein !== undefined) supabaseUpdates.protein = parseFloat(updateData.protein);
-    if (updateData.carbs !== undefined) supabaseUpdates.carbs = parseFloat(updateData.carbs);
-    if (updateData.fat !== undefined) supabaseUpdates.fat = parseFloat(updateData.fat);
-    if (updateData.source !== undefined) supabaseUpdates.source = updateData.source;
-
-    const entry = await updateFoodLog(user.id, id, supabaseUpdates);
+    // Verify ownership
+    const existingEntry = await db.foodLogEntry.findFirst({
+      where: { id, userId: user.id }
+    });
     
-    if (!entry) {
+    if (!existingEntry) {
       return NextResponse.json({ error: 'Entry not found or access denied' }, { status: 404 });
     }
-
-    // Format response for compatibility
+    
+    // Build update object
+    const dbUpdates: Record<string, unknown> = {};
+    
+    if (updateData.quantity !== undefined) dbUpdates.quantity = parseFloat(updateData.quantity);
+    if (updateData.unit !== undefined) dbUpdates.unit = updateData.unit;
+    if (updateData.calories !== undefined) dbUpdates.calories = parseFloat(updateData.calories);
+    if (updateData.protein !== undefined) dbUpdates.protein = parseFloat(updateData.protein);
+    if (updateData.carbs !== undefined) dbUpdates.carbs = parseFloat(updateData.carbs);
+    if (updateData.fat !== undefined) dbUpdates.fat = parseFloat(updateData.fat);
+    if (updateData.source !== undefined) dbUpdates.source = updateData.source;
+    if (updateData.rationale !== undefined) dbUpdates.rationale = updateData.rationale;
+    
+    // Update entry
+    const entry = await db.foodLogEntry.update({
+      where: { id },
+      data: dbUpdates,
+      include: {
+        Food: {
+          select: { id: true, name: true }
+        }
+      }
+    });
+    
+    // Format response
     const formattedEntry = {
       id: entry.id,
-      foodId: entry.food_id,
+      foodId: entry.foodId,
       quantity: entry.quantity,
       unit: entry.unit,
       calories: entry.calories,
@@ -284,11 +226,11 @@ export async function PUT(request: NextRequest) {
       carbs: entry.carbs,
       fat: entry.fat,
       source: entry.source,
-      loggedAt: entry.logged_at,
-      rationale: entry.notes,
-      food: entry.food_name ? { id: entry.food_id || 'unknown', name: entry.food_name } : null,
+      loggedAt: entry.loggedAt.toISOString(),
+      rationale: entry.rationale,
+      food: entry.Food ? { id: entry.Food.id, name: entry.Food.name } : null,
     };
-
+    
     return NextResponse.json({ entry: formattedEntry });
   } catch (error) {
     console.error('Error updating food log entry:', error);

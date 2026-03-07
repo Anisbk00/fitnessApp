@@ -9,8 +9,8 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
-import { getOrCreateProfile, updateProfile, getOrCreateUserSettings, updateUserSettings } from '@/lib/supabase/data-service';
+import { requireAuth } from '@/lib/supabase/server';
+import { db } from '@/lib/db';
 import { 
   validateSetupData, 
   type SetupData,
@@ -40,17 +40,9 @@ export async function POST(request: NextRequest) {
   const startTime = Date.now();
   
   try {
-    // Authenticate with Supabase
-    const supabase = await createClient();
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    // Authenticate
+    const user = await requireAuth();
     
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Authentication required' },
-        { status: 401 }
-      );
-    }
-
     // Parse request body
     const body: SetupCompleteRequest = await request.json();
     
@@ -63,40 +55,95 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get or create profile
-    const profile = await getOrCreateProfile(user);
+    // Get or create user profile
+    let profile = await db.userProfile.findUnique({
+      where: { userId: user.id },
+    });
     
-    // Update profile with setup data
-    const updatedProfile = await updateProfile(user.id, {
-      coaching_tone: body.coachingTone,
-      timezone: body.timezone,
-      locale: body.unitSystem === 'imperial' ? 'en-US' : 'en-GB',
+    if (!profile) {
+      profile = await db.userProfile.create({
+        data: {
+          id: `up_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          userId: user.id,
+          locale: body.unitSystem === 'imperial' ? 'en-US' : 'en-GB',
+          updatedAt: new Date(),
+        },
+      });
+    } else {
+      // Update profile with setup data
+      profile = await db.userProfile.update({
+        where: { userId: user.id },
+        data: {
+          locale: body.unitSystem === 'imperial' ? 'en-US' : 'en-GB',
+          updatedAt: new Date(),
+        },
+      });
+    }
+
+    // Get or create user settings
+    let settings = await db.userSettings.findUnique({
+      where: { userId: user.id },
+    });
+    
+    if (!settings) {
+      settings = await db.userSettings.create({
+        data: {
+          id: `us_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          userId: user.id,
+          setupCompleted: true,
+          setupCompletedAt: new Date(),
+          setupSkipped: false,
+          updatedAt: new Date(),
+        },
+      });
+    } else {
+      // Update settings to mark setup complete
+      settings = await db.userSettings.update({
+        where: { userId: user.id },
+        data: {
+          setupCompleted: true,
+          setupCompletedAt: new Date(),
+          setupSkipped: false,
+        },
+      });
+    }
+
+    // Update user with timezone and coaching tone
+    await db.user.update({
+      where: { id: user.id },
+      data: {
+        timezone: body.timezone,
+        coachingTone: body.coachingTone,
+        updatedAt: new Date(),
+      },
     });
 
-    // Update user settings to mark setup complete
-    const settings = await updateUserSettings(user.id, {
-      setup_completed: true,
-      setup_completed_at: new Date().toISOString(),
-      setup_skipped: false,
-    });
-
-    // Update profile goal and activity level in goals table
+    // Create or update goal for primary goal
     if (body.primaryGoal) {
-      // Create or update a goal for the primary goal
-      await supabase
-        .from('goals')
-        .upsert({
-          user_id: user.id,
-          goal_type: 'primary_goal',
-          target_value: 1,
-          current_value: 1,
-          unit: 'status',
-          status: 'active',
-          source: 'setup',
-          confidence: 0.9,
-        }, {
-          onConflict: 'user_id,goal_type',
+      const existingGoal = await db.goal.findFirst({
+        where: { userId: user.id, goalType: 'primary_goal' },
+      });
+      
+      if (existingGoal) {
+        await db.goal.update({
+          where: { id: existingGoal.id },
+          data: { status: 'active', updatedAt: new Date() },
         });
+      } else {
+        await db.goal.create({
+          data: {
+            id: `goal_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+            userId: user.id,
+            goalType: 'primary_goal',
+            targetValue: 1,
+            unit: 'status',
+            status: 'active',
+            source: 'setup',
+            confidence: 0.9,
+            updatedAt: new Date(),
+          },
+        });
+      }
     }
 
     // Calculate processing time
@@ -111,8 +158,8 @@ export async function POST(request: NextRequest) {
           activityLevel: body.activityLevel,
         },
         settings: {
-          setupCompleted: settings?.setup_completed ?? true,
-          setupCompletedAt: settings?.setup_completed_at,
+          setupCompleted: settings?.setupCompleted ?? true,
+          setupCompletedAt: settings?.setupCompletedAt?.toISOString() || null,
         },
         processingTime,
       },
@@ -129,21 +176,30 @@ export async function POST(request: NextRequest) {
 // Skip endpoint - mark setup as skipped
 export async function PATCH() {
   try {
-    // Authenticate with Supabase
-    const supabase = await createClient();
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    // Authenticate
+    const user = await requireAuth();
     
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Authentication required' },
-        { status: 401 }
-      );
-    }
-
-    // Mark setup as skipped
-    await updateUserSettings(user.id, {
-      setup_skipped: true,
+    // Get or create user settings
+    let settings = await db.userSettings.findUnique({
+      where: { userId: user.id },
     });
+    
+    if (!settings) {
+      settings = await db.userSettings.create({
+        data: {
+          id: `us_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          userId: user.id,
+          setupSkipped: true,
+          updatedAt: new Date(),
+        },
+      });
+    } else {
+      // Mark setup as skipped
+      await db.userSettings.update({
+        where: { userId: user.id },
+        data: { setupSkipped: true, updatedAt: new Date() },
+      });
+    }
 
     return NextResponse.json({
       success: true,

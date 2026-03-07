@@ -9,12 +9,19 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-import { requireAuth } from '@/lib/supabase/auth-helpers'
+import { requireAuth } from '@/lib/supabase/server'
 import { 
   calculateAllMetrics,
   MetricsSnapshot,
-} from '@/lib/gpx-tracking'
-import type { GPSPoint } from '@/lib/gpx-tracking'
+} from '@/lib/gps-tracking'
+import type { GPSPoint } from '@/lib/gps-tracking'
+
+// ═══════════════════════════════════════════════════════════════
+// TEST MODE
+// ═══════════════════════════════════════════════════════════════
+
+const TEST_MODE = true;
+const TEST_USER_ID = '2ab062a9-f145-4618-b3e6-6ee2ab88f077';
 
 // ═══════════════════════════════════════════════════════════════
 // Types
@@ -113,16 +120,16 @@ function calculateRecoveryScore(
 function generatePerformanceInsights(
   metrics: MetricsSnapshot,
   activityType: string,
-  previousWorkouts: { distanceMeters: number; avgPace: number | null; startedAt: Date }[]
+  previousWorkouts: { distanceMeters: number | null; avgPace: number | null; startedAt: Date }[]
 ): WorkoutInsight[] {
   const insights: WorkoutInsight[] = []
   
   if (previousWorkouts.length >= 3) {
-    const recentDistances = previousWorkouts.slice(0, 3).map(w => w.distanceMeters)
+    const recentDistances = previousWorkouts.slice(0, 3).map(w => w.distanceMeters || 0)
     const avgDistance = recentDistances.reduce((a, b) => a + b, 0) / recentDistances.length
     const distanceDiff = metrics.distance - avgDistance
     
-    if (distanceDiff > avgDistance * 0.1) {
+    if (distanceDiff > avgDistance * 0.1 && avgDistance > 0) {
       insights.push({
         id: `perf-distance-${Date.now()}`,
         type: 'performance',
@@ -238,13 +245,14 @@ function generateRecoveryInsights(
 
 function generatePRInsights(
   metrics: MetricsSnapshot,
-  previousWorkouts: { distanceMeters: number; avgPace: number | null; startedAt: Date }[]
+  previousWorkouts: { distanceMeters: number | null; avgPace: number | null; startedAt: Date }[]
 ): WorkoutInsight[] {
   const insights: WorkoutInsight[] = []
   
   if (previousWorkouts.length > 0) {
-    const maxDistance = Math.max(...previousWorkouts.map(w => w.distanceMeters))
-    if (metrics.distance > maxDistance) {
+    const distances = previousWorkouts.map(w => w.distanceMeters || 0)
+    const maxDistance = Math.max(...distances)
+    if (metrics.distance > maxDistance && maxDistance > 0) {
       insights.push({
         id: `pr-distance-${Date.now()}`,
         type: 'pr',
@@ -271,6 +279,8 @@ function generatePRInsights(
 export async function POST(request: NextRequest) {
   try {
     const user = await requireAuth()
+    const userId = TEST_MODE ? TEST_USER_ID : user.id
+    
     const body = await request.json()
     
     const { workoutId, routeData, activityType } = body
@@ -294,7 +304,7 @@ export async function POST(request: NextRequest) {
       }
     } else if (workoutId) {
       const workout = await db.workout.findUnique({
-        where: { id: workoutId, userId: user.id },
+        where: { id: workoutId, userId },
       })
       
       if (!workout || !workout.routeData) {
@@ -318,7 +328,7 @@ export async function POST(request: NextRequest) {
     
     const previousWorkouts = await db.workout.findMany({
       where: {
-        userId: user.id,
+        userId,
         activityType: activityType || 'run',
         startedAt: {
           gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),

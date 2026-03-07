@@ -1,7 +1,7 @@
 /**
  * User API Route
  * 
- * Handles user data operations using Supabase.
+ * Handles user data operations using Prisma.
  * Includes rate limiting, optimistic locking, and request logging.
  * Supports TEST_MODE for development/testing without auth.
  * 
@@ -9,12 +9,8 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient, createAdminClient } from '@/lib/supabase/server'
-import { 
-  getOrCreateProfile, 
-  updateProfile, 
-  getOrCreateUserSettings,
-} from '@/lib/supabase/data-service'
+import { db } from '@/lib/db'
+import { requireAuth } from '@/lib/supabase/server'
 import { 
   checkRateLimit, 
   RATE_LIMITS, 
@@ -31,151 +27,18 @@ import {
 } from '@/lib/optimistic-locking'
 
 // ═══════════════════════════════════════════════════════════════
-// TEST MODE - Same as in auth-context.tsx
+// TEST MODE - Use local Prisma database
 // ═══════════════════════════════════════════════════════════════
 const TEST_MODE = true;
-const TEST_USER_ID = '2ab062a9-f145-4618-b3e6-6ee2ab88f077';
 
-// ═══════════════════════════════════════════════════════════════
-// GET /api/user - Get current user data from Supabase
-// ═══════════════════════════════════════════════════════════════
-
+// GET /api/user - Get current user data
 export async function GET(request: NextRequest) {
   const startTime = logger.logRequest('GET', '/api/user')
   
-  // ═══════════════════════════════════════════════════════════════
-  // TEST MODE - Check for test mode headers
-  // ═══════════════════════════════════════════════════════════════
-  const isTestMode = TEST_MODE && request.headers.get('X-Test-Mode') === 'true';
-  const testUserId = request.headers.get('X-Test-User-Id') || TEST_USER_ID;
-  
-  if (isTestMode) {
-    console.log('[API User] TEST MODE - Bypassing auth for user:', testUserId);
-    
-    try {
-      // Use admin client to bypass RLS (no auth session in test mode)
-      const supabase = createAdminClient()
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', testUserId)
-        .maybeSingle()
-      
-      if (profileError) {
-        console.error('[API User] TEST MODE - Profile fetch error:', profileError)
-        return NextResponse.json({ error: 'Failed to fetch test user' }, { status: 500 })
-      }
-      
-      if (!profile) {
-        console.warn('[API User] TEST MODE - No profile found for user:', testUserId)
-        // Return a default profile for test mode
-        return NextResponse.json({
-          user: {
-            id: testUserId,
-            email: 'anisbk554@gmail.com',
-            name: 'Anis',
-            avatarUrl: null,
-            timezone: 'UTC',
-            locale: 'en',
-            coachingTone: 'encouraging',
-            privacyMode: 'public',
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-            UserProfile: {
-              userId: testUserId,
-              birthDate: null,
-              biologicalSex: null,
-              heightCm: null,
-              targetWeightKg: null,
-              activityLevel: 'moderate',
-              fitnessLevel: 'beginner',
-              primaryGoal: null,
-              targetDate: null,
-            },
-            UserSettings: {
-              id: 'test-settings',
-              userId: testUserId,
-              theme: 'system',
-              notificationsEnabled: true,
-              emailNotifications: true,
-              pushNotifications: true,
-              language: 'en',
-              units: 'metric',
-            },
-            _count: {
-              Meal: 0,
-              Measurement: 0,
-              ProgressPhoto: 0,
-              Workout: 0,
-            },
-          }
-        })
-      }
-      
-      console.log('[API User] TEST MODE - Profile loaded:', profile.name);
-      
-      // Return the actual profile from the database
-      return NextResponse.json({
-        user: {
-          id: profile.id,
-          email: profile.email,
-          name: profile.name,
-          avatarUrl: profile.avatar_url,
-          timezone: profile.timezone,
-          locale: profile.locale,
-          coachingTone: profile.coaching_tone,
-          privacyMode: profile.privacy_mode ? 'private' : 'public',
-          createdAt: profile.created_at,
-          updatedAt: profile.updated_at,
-          UserProfile: {
-            userId: profile.id,
-            birthDate: null,
-            biologicalSex: null,
-            heightCm: null,
-            targetWeightKg: null,
-            activityLevel: 'moderate',
-            fitnessLevel: 'beginner',
-            primaryGoal: null,
-            targetDate: null,
-          },
-          UserSettings: {
-            id: 'test-settings',
-            userId: profile.id,
-            theme: 'system',
-            notificationsEnabled: true,
-            emailNotifications: true,
-            pushNotifications: true,
-            language: 'en',
-            units: 'metric',
-          },
-          _count: {
-            Meal: 0,
-            Measurement: 0,
-            ProgressPhoto: 0,
-            Workout: 0,
-          },
-        }
-      })
-    } catch (error) {
-      console.error('[API User] TEST MODE - Error:', error)
-      return NextResponse.json({ error: 'Failed to fetch test user' }, { status: 500 })
-    }
-  }
-  
-  // ═══════════════════════════════════════════════════════════════
-  // NORMAL AUTH FLOW
-  // ═══════════════════════════════════════════════════════════════
-  
   try {
-    const supabase = await createClient()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    const user = await requireAuth();
     
-    if (authError || !user) {
-      logger.auth('user_fetch', { success: false, error: authError })
-      return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
-    }
-
-    // Rate limiting - use API_READ for generous limits (accounts for StrictMode double-renders)
+    // Rate limiting
     const rateLimitKey = createRateLimitKey(request, user.id)
     const rateLimitResult = checkRateLimit(rateLimitKey, RATE_LIMITS.API_READ)
     
@@ -189,62 +52,138 @@ export async function GET(request: NextRequest) {
         }
       )
     }
-
-    // Get or create profile in Supabase
-    const profile = await getOrCreateProfile(user)
     
-    // Get or create user settings
-    const settings = await getOrCreateUserSettings(user.id)
-
+    // Get user from local database
+    const dbUser = await db.user.findUnique({
+      where: { id: user.id },
+      include: {
+        UserProfile: true,
+        UserSettings: true,
+        _count: {
+          select: {
+            Meal: true,
+            Measurement: true,
+            ProgressPhoto: true,
+            Workout: true,
+          }
+        }
+      }
+    });
+    
+    if (!dbUser) {
+      // Create user if doesn't exist (for TEST_MODE)
+      if (TEST_MODE) {
+        const newUser = await db.user.create({
+          data: {
+            id: user.id,
+            email: user.email || 'test@test.com',
+            name: 'Test User',
+            timezone: 'UTC',
+            locale: 'en',
+            coachingTone: 'supportive',
+            privacyMode: 'private',
+            updatedAt: new Date(),
+          },
+          include: {
+            UserProfile: true,
+            UserSettings: true,
+          }
+        });
+        
+        logger.logResponse('GET', '/api/user', 200, startTime, { userId: user.id })
+        
+        return NextResponse.json({
+          user: {
+            id: newUser.id,
+            email: newUser.email,
+            name: newUser.name,
+            avatarUrl: newUser.avatarUrl,
+            timezone: newUser.timezone,
+            locale: newUser.locale,
+            coachingTone: newUser.coachingTone,
+            privacyMode: newUser.privacyMode,
+            createdAt: newUser.createdAt.toISOString(),
+            updatedAt: newUser.updatedAt.toISOString(),
+            UserProfile: newUser.UserProfile ? {
+              userId: newUser.UserProfile.userId,
+              birthDate: newUser.UserProfile.birthDate?.toISOString() || null,
+              biologicalSex: newUser.UserProfile.biologicalSex,
+              heightCm: newUser.UserProfile.heightCm,
+              targetWeightKg: newUser.UserProfile.targetWeightKg,
+              activityLevel: newUser.UserProfile.activityLevel,
+              fitnessLevel: newUser.UserProfile.fitnessLevel,
+              primaryGoal: newUser.UserProfile.primaryGoal,
+              targetDate: newUser.UserProfile.targetDate?.toISOString() || null,
+            } : null,
+            UserSettings: newUser.UserSettings ? {
+              id: newUser.UserSettings.id,
+              userId: newUser.UserSettings.userId,
+              theme: 'system',
+              notificationsEnabled: true,
+              emailNotifications: true,
+              pushNotifications: true,
+              language: 'en',
+              units: 'metric',
+            } : null,
+            _count: { Meal: 0, Measurement: 0, ProgressPhoto: 0, Workout: 0 },
+          }
+        });
+      }
+      
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+    
     logger.logResponse('GET', '/api/user', 200, startTime, { userId: user.id })
-
-    // Format response for compatibility with frontend
+    
+    // Format response
     const formattedUser = {
-      id: profile.id,
-      email: profile.email,
-      name: profile.name,
-      avatarUrl: profile.avatar_url,
-      timezone: profile.timezone,
-      locale: profile.locale,
-      coachingTone: profile.coaching_tone,
-      privacyMode: profile.privacy_mode ? 'private' : 'public',
-      createdAt: profile.created_at,
-      updatedAt: profile.updated_at,
-      UserProfile: {
-        userId: profile.id,
-        birthDate: null,
-        biologicalSex: null,
-        heightCm: null,
-        targetWeightKg: null,
-        activityLevel: 'moderate',
-        fitnessLevel: 'beginner',
-        primaryGoal: null,
-        targetDate: null,
-      },
-      UserSettings: {
-        id: settings.id,
-        userId: settings.user_id,
-        theme: settings.theme,
-        notificationsEnabled: settings.notifications_enabled,
-        emailNotifications: settings.email_notifications,
-        pushNotifications: settings.push_notifications,
-        language: settings.language,
-        units: settings.units,
-      },
-      _count: {
-        Meal: 0,
-        Measurement: 0,
-        ProgressPhoto: 0,
-        Workout: 0,
-      },
+      id: dbUser.id,
+      email: dbUser.email,
+      name: dbUser.name,
+      avatarUrl: dbUser.avatarUrl,
+      timezone: dbUser.timezone,
+      locale: dbUser.locale,
+      coachingTone: dbUser.coachingTone,
+      privacyMode: dbUser.privacyMode,
+      createdAt: dbUser.createdAt?.toISOString() || new Date().toISOString(),
+      updatedAt: dbUser.updatedAt?.toISOString() || new Date().toISOString(),
+      UserProfile: dbUser.UserProfile ? {
+        userId: dbUser.UserProfile.userId,
+        birthDate: dbUser.UserProfile.birthDate?.toISOString() || null,
+        biologicalSex: dbUser.UserProfile.biologicalSex,
+        heightCm: dbUser.UserProfile.heightCm,
+        targetWeightKg: dbUser.UserProfile.targetWeightKg,
+        activityLevel: dbUser.UserProfile.activityLevel,
+        fitnessLevel: dbUser.UserProfile.fitnessLevel,
+        primaryGoal: dbUser.UserProfile.primaryGoal,
+        targetDate: dbUser.UserProfile.targetDate?.toISOString() || null,
+      } : null,
+      UserSettings: dbUser.UserSettings ? {
+        id: dbUser.UserSettings.id,
+        userId: dbUser.UserSettings.userId,
+        theme: 'system',
+        notificationsEnabled: true,
+        emailNotifications: true,
+        pushNotifications: true,
+        language: 'en',
+        units: 'metric',
+      } : null,
+      _count: dbUser._count,
     };
-
+    
+    // Map Prisma entity to VersionedEntity format for optimistic locking
+    const versionedEntity = {
+      id: dbUser.id,
+      updated_at: dbUser.updatedAt?.toISOString() || new Date().toISOString(),
+      version: dbUser.version,
+    };
+    
     return NextResponse.json(
       { user: formattedUser },
       {
         headers: {
           ...getRateLimitHeaders(rateLimitResult),
-          ...getVersionHeaders(profile),
+          ...getVersionHeaders(versionedEntity),
         }
       }
     )
@@ -254,21 +193,12 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════
-// PATCH /api/user - Update user data in Supabase
-// ═══════════════════════════════════════════════════════════════
-
+// PATCH /api/user - Update user data
 export async function PATCH(request: NextRequest) {
   const startTime = logger.logRequest('PATCH', '/api/user')
   
   try {
-    const supabase = await createClient()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    
-    if (authError || !user) {
-      logger.auth('user_update', { success: false, error: authError })
-      return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
-    }
+    const user = await requireAuth();
     
     // Rate limiting
     const rateLimitKey = createRateLimitKey(request, user.id)
@@ -284,17 +214,30 @@ export async function PATCH(request: NextRequest) {
         }
       )
     }
-
+    
     // Extract version for optimistic locking
     const providedVersionStr = getVersionFromHeaders(request.headers)
     const providedVersion = parseVersion(providedVersionStr)
     
-    // Get current profile for optimistic locking check
-    const currentProfile = await getOrCreateProfile(user)
+    // Get current user
+    const currentUser = await db.user.findUnique({
+      where: { id: user.id }
+    });
+    
+    if (!currentUser) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
     
     // Validate version (optimistic locking)
     if (providedVersion !== null) {
-      const lockCheck = validateVersion(currentProfile, providedVersion)
+      // Map Prisma entity to VersionedEntity format
+      const versionedCurrentUser = {
+        id: currentUser.id,
+        updated_at: currentUser.updatedAt?.toISOString() || new Date().toISOString(),
+        version: currentUser.version,
+      };
+      
+      const lockCheck = validateVersion(versionedCurrentUser, providedVersion)
       
       if (lockCheck.conflict) {
         logger.warn('Optimistic lock conflict on user update', {
@@ -318,7 +261,7 @@ export async function PATCH(request: NextRequest) {
           },
           { 
             status: 409,
-            headers: getVersionHeaders(currentProfile)
+            headers: getVersionHeaders(versionedCurrentUser)
           }
         )
       }
@@ -326,50 +269,55 @@ export async function PATCH(request: NextRequest) {
     
     const body = await request.json()
     
-    // Map update fields to Supabase format
-    const updates: Record<string, unknown> = {}
+    // Build updates
+    const updates: Record<string, unknown> = { updatedAt: new Date() }
     
     if (body.name !== undefined) updates.name = body.name
-    if (body.coachingTone !== undefined) updates.coaching_tone = body.coachingTone
-    if (body.privacyMode !== undefined) updates.privacy_mode = body.privacyMode === 'private'
+    if (body.coachingTone !== undefined) updates.coachingTone = body.coachingTone
+    if (body.privacyMode !== undefined) updates.privacyMode = body.privacyMode
     if (body.timezone !== undefined) updates.timezone = body.timezone
     if (body.locale !== undefined) updates.locale = body.locale
-    if (body.avatarUrl !== undefined) updates.avatar_url = body.avatarUrl
-
-    // Update profile in Supabase
-    const updatedProfile = await updateProfile(user.id, updates)
-
-    if (!updatedProfile) {
-      logger.error('Failed to update user profile', undefined, { userId: user.id })
-      return NextResponse.json({ error: 'Failed to update user' }, { status: 500 })
-    }
-
+    if (body.avatarUrl !== undefined) updates.avatarUrl = body.avatarUrl
+    
+    // Update user in database
+    const updatedUser = await db.user.update({
+      where: { id: user.id },
+      data: updates,
+    });
+    
     logger.info('User updated', { 
       userId: user.id, 
       fields: Object.keys(updates) 
     })
     logger.logResponse('PATCH', '/api/user', 200, startTime, { userId: user.id })
-
+    
     // Format response
     const formattedUser = {
-      id: updatedProfile.id,
-      email: updatedProfile.email,
-      name: updatedProfile.name,
-      avatarUrl: updatedProfile.avatar_url,
-      timezone: updatedProfile.timezone,
-      locale: updatedProfile.locale,
-      coachingTone: updatedProfile.coaching_tone,
-      privacyMode: updatedProfile.privacy_mode ? 'private' : 'public',
-      createdAt: updatedProfile.created_at,
-      updatedAt: updatedProfile.updated_at,
+      id: updatedUser.id,
+      email: updatedUser.email,
+      name: updatedUser.name,
+      avatarUrl: updatedUser.avatarUrl,
+      timezone: updatedUser.timezone,
+      locale: updatedUser.locale,
+      coachingTone: updatedUser.coachingTone,
+      privacyMode: updatedUser.privacyMode,
+      createdAt: updatedUser.createdAt?.toISOString() || new Date().toISOString(),
+      updatedAt: updatedUser.updatedAt?.toISOString() || new Date().toISOString(),
     };
-
+    
+    // Map Prisma entity to VersionedEntity format for optimistic locking
+    const versionedEntity = {
+      id: updatedUser.id,
+      updated_at: updatedUser.updatedAt?.toISOString() || new Date().toISOString(),
+      version: updatedUser.version,
+    };
+    
     return NextResponse.json(
       { user: formattedUser },
       {
         headers: {
           ...getRateLimitHeaders(rateLimitResult),
-          ...getVersionHeaders(updatedProfile),
+          ...getVersionHeaders(versionedEntity),
         }
       }
     )
