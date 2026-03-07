@@ -20,14 +20,29 @@ const PUBLIC_ROUTES = [
   '/auth/reset-password',
 ]
 
+// TEST_MODE - Set to true to bypass auth checks during development
+const TEST_MODE = true;
+
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
     request,
   })
 
+  // Check if Supabase is configured
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  
+  // If Supabase isn't configured or TEST_MODE is enabled, pass through
+  if (!supabaseUrl || !supabaseKey || 
+      supabaseUrl === 'https://placeholder.supabase.co' || 
+      TEST_MODE) {
+    console.log('[Middleware] TEST_MODE or Supabase not configured - passing through');
+    return supabaseResponse;
+  }
+
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    supabaseUrl,
+    supabaseKey,
     {
       cookies: {
         getAll() {

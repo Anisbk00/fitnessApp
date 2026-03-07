@@ -106,14 +106,28 @@ export async function getServerUser() {
 
 /**
  * Require authentication - throws if not authenticated
- * In TEST_MODE with X-Test-Mode header, returns a mock user
+ * In TEST_MODE, returns a mock user (always, not just with headers)
  */
 export async function requireAuth() {
-  // Check for TEST_MODE request first
+  // In TEST_MODE, always return mock user regardless of headers
+  if (TEST_MODE) {
+    console.log('[Server] TEST_MODE - Using mock user:', TEST_USER_ID);
+    // Return a mock user for test mode
+    return {
+      id: TEST_USER_ID,
+      email: 'anisbk554@gmail.com',
+      app_metadata: {},
+      user_metadata: { name: 'Test' },
+      aud: 'authenticated',
+      created_at: new Date().toISOString(),
+      role: 'authenticated',
+    };
+  }
+  
+  // Check for TEST_MODE request headers as fallback
   const { isTestMode, testUserId } = await isTestModeRequest();
   
   if (isTestMode) {
-    // Return a mock user for test mode
     return {
       id: testUserId,
       email: 'anisbk554@gmail.com',
