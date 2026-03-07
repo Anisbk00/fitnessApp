@@ -1,0 +1,19 @@
+{
+  "name": "ProgressCompanion",
+  "short_name": "ProgressApp",
+  "description": "Your intelligent fitness and nutrition companion",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0a0a",
+  "theme_color": "#0a0a0a",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["health", "fitness", "lifestyle"]
+}

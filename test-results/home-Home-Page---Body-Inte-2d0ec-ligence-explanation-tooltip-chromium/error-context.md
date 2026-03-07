@@ -1,0 +1,178 @@
+# Page snapshot
+
+```yaml
+- generic [active]:
+  - generic [ref=e1]:
+    - link "Skip to main content" [ref=e2] [cursor=pointer]:
+      - /url: "#main-content"
+    - main "Main content area" [ref=e4]:
+      - region "Home dashboard" [ref=e5]:
+        - generic [ref=e7]:
+          - generic [ref=e8]:
+            - heading "Good afternoon, Test test test." [level=1] [ref=e9]
+            - paragraph [ref=e10]: Every action counts. Start small.
+          - generic [ref=e11]:
+            - img [ref=e12]
+            - generic [ref=e17]: T
+        - generic [ref=e25]:
+          - generic [ref=e26]:
+            - generic [ref=e27]:
+              - generic [ref=e28]:
+                - paragraph [ref=e29]: Body Intelligence
+                - button "What is Body Intelligence?" [ref=e30]:
+                  - img [ref=e31]
+              - generic [ref=e33]:
+                - generic [ref=e34]: "38"
+                - generic [ref=e35]: / 100
+            - generic [ref=e36]:
+              - img [ref=e37]
+              - text: Stable progress
+          - generic [ref=e38]:
+            - generic [ref=e39]:
+              - generic [ref=e40]:
+                - img [ref=e41]
+                - paragraph [ref=e43]: "0"
+              - paragraph [ref=e44]: burned
+            - generic [ref=e46]:
+              - generic [ref=e47]:
+                - img [ref=e48]
+                - paragraph [ref=e51]:
+                  - text: "3"
+                  - generic [ref=e52]: /10
+              - paragraph [ref=e53]: glasses
+            - generic [ref=e56]:
+              - generic [ref=e57]:
+                - img [ref=e58]
+                - paragraph [ref=e60]: "1"
+              - paragraph [ref=e61]: day streak
+          - generic [ref=e65]:
+            - img [ref=e67]
+            - generic [ref=e77]:
+              - generic [ref=e78]:
+                - paragraph [ref=e79]: AI Insight
+                - 'status "Data source: AI Model, recorded less than a minute ago" [ref=e80]':
+                  - img [ref=e81]
+                  - generic [ref=e91]: AI Model
+                  - generic [ref=e92]: less than a minute ago
+              - paragraph [ref=e93]: Start with small wins. Even a short walk moves you forward.
+        - region "Daily action modules" [ref=e94]:
+          - list [ref=e95]:
+            - 'button "Nutrition: 11% progress. Tap to view details." [ref=e96] [cursor=pointer]':
+              - generic [ref=e97]:
+                - img [ref=e98]
+                - img [ref=e102]
+              - generic [ref=e105]:
+                - paragraph [ref=e106]: Nutrition
+                - paragraph [ref=e107]: 11%
+            - 'button "Hydration: 30% progress. Tap to view details." [ref=e108] [cursor=pointer]':
+              - generic [ref=e109]:
+                - img [ref=e110]
+                - img [ref=e114]
+              - generic [ref=e117]:
+                - paragraph [ref=e118]: Hydration
+                - paragraph [ref=e119]: 30%
+            - 'button "Steps: 0% progress. Tap to view details." [ref=e120] [cursor=pointer]':
+              - generic [ref=e121]:
+                - img [ref=e122]
+                - img [ref=e126]
+              - generic [ref=e129]:
+                - paragraph [ref=e130]: Steps
+                - paragraph [ref=e131]: 0%
+            - 'button "Workout: 0% progress. Tap to view details." [ref=e132] [cursor=pointer]':
+              - generic [ref=e133]:
+                - img [ref=e134]
+                - img [ref=e138]
+              - generic [ref=e144]:
+                - paragraph [ref=e145]: Workout
+                - paragraph [ref=e146]: 0%
+        - generic [ref=e147]:
+          - generic [ref=e148]:
+            - heading "Progress Mirror" [level=3] [ref=e149]
+            - generic [ref=e150]: 30-day evolution
+          - generic [ref=e151]:
+            - img [ref=e154]
+            - generic [ref=e162]:
+              - generic [ref=e165]: Evolving
+              - generic [ref=e166]: 80.0 kg
+        - region "Today's nutrition summary" [ref=e167]:
+          - generic [ref=e168]:
+            - heading "Today's Fuel" [level=3] [ref=e169]
+            - generic [ref=e170]: Friday, Mar 6
+          - button "View nutrition details" [ref=e171]:
+            - generic [ref=e175]:
+              - generic [ref=e176]:
+                - generic [ref=e177]:
+                  - img [ref=e178]
+                  - generic [ref=e181]:
+                    - generic [ref=e182]: "142"
+                    - generic [ref=e183]: kcal
+                - generic [ref=e184]:
+                  - paragraph [ref=e185]: 1858 kcal remaining
+                  - paragraph [ref=e186]: of 2000 kcal daily goal
+              - generic [ref=e187]:
+                - generic [ref=e189]:
+                  - generic [ref=e190]: Protein
+                  - generic [ref=e191]: 13g
+                - generic [ref=e195]:
+                  - generic [ref=e196]: Carbs
+                  - generic [ref=e197]: 1g
+                - generic [ref=e201]:
+                  - generic [ref=e202]: Fat
+                  - generic [ref=e203]: 10g
+              - paragraph [ref=e206]: Tap to log meals
+    - status [ref=e207]: Home dashboard loaded
+    - button "AI Coach assistant" [ref=e208]:
+      - img [ref=e209]
+    - navigation "Main navigation" [ref=e212]:
+      - tablist [ref=e214]:
+        - tab "Home" [selected] [ref=e215]:
+          - img [ref=e217]
+          - generic [ref=e220]: Home
+        - tab "Workouts" [ref=e221]:
+          - img [ref=e223]
+          - generic [ref=e225]: Workouts
+        - tab "Foods" [ref=e226]:
+          - img [ref=e228]
+          - generic [ref=e231]: Foods
+        - tab "Intelligence" [ref=e232]:
+          - img [ref=e234]
+          - generic [ref=e236]: Intelligence
+        - tab "Profile" [ref=e237]:
+          - img [ref=e239]
+          - generic [ref=e242]: Profile
+  - region "Notifications (F8)":
+    - list
+  - button "Open Next.js Dev Tools" [ref=e248] [cursor=pointer]:
+    - generic [ref=e251]:
+      - text: Rendering
+      - generic [ref=e252]:
+        - generic [ref=e253]: .
+        - generic [ref=e254]: .
+        - generic [ref=e255]: .
+  - alert [ref=e256]
+  - generic [ref=e258]:
+    - generic [ref=e259]:
+      - paragraph [ref=e260]: What is Body Intelligence?
+      - paragraph [ref=e261]: Body Intelligence is a holistic score (0-100) that reflects how well you're supporting your body's needs. It combines your nutrition adherence, hydration, workout activity, and consistency streak.
+      - generic [ref=e262]:
+        - paragraph [ref=e263]: "Score factors:"
+        - list [ref=e264]:
+          - listitem [ref=e265]: • Nutrition - calorie & protein targets
+          - listitem [ref=e266]: • Hydration - water intake
+          - listitem [ref=e267]: • Activity - workout calories burned
+          - listitem [ref=e268]: • Streak - consecutive days logged
+      - paragraph [ref=e269]: Weights adapt based on your primary goal (fat loss, muscle gain, etc.)
+    - img [ref=e271]
+    - 'tooltip "What is Body Intelligence? Body Intelligence is a holistic score (0-100) that reflects how well you''re supporting your body''s needs. It combines your nutrition adherence, hydration, workout activity, and consistency streak. Score factors: • Nutrition - calorie & protein targets • Hydration - water intake • Activity - workout calories burned • Streak - consecutive days logged Weights adapt based on your primary goal (fat loss, muscle gain, etc.)" [ref=e273]':
+      - generic [ref=e274]:
+        - paragraph [ref=e275]: What is Body Intelligence?
+        - paragraph [ref=e276]: Body Intelligence is a holistic score (0-100) that reflects how well you're supporting your body's needs. It combines your nutrition adherence, hydration, workout activity, and consistency streak.
+        - generic [ref=e277]:
+          - paragraph [ref=e278]: "Score factors:"
+          - list [ref=e279]:
+            - listitem [ref=e280]: • Nutrition - calorie & protein targets
+            - listitem [ref=e281]: • Hydration - water intake
+            - listitem [ref=e282]: • Activity - workout calories burned
+            - listitem [ref=e283]: • Streak - consecutive days logged
+        - paragraph [ref=e284]: Weights adapt based on your primary goal (fat loss, muscle gain, etc.)
+```
