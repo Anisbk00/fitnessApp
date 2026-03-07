@@ -263,7 +263,7 @@ function HydrationTracker({
 
   return (
     <div className={cn(
-      "rounded-2xl p-4 border transition-colors duration-300",
+      "rounded-2xl p-4 border",
       isExceeded 
         ? "bg-gradient-to-br from-rose-500/10 to-red-500/10 border-rose-500/20"
         : isGoalMet
@@ -274,12 +274,11 @@ function HydrationTracker({
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <Droplets className={cn(
-            "w-5 h-5 transition-colors",
+            "w-5 h-5",
             isExceeded ? "text-rose-500" : isGoalMet ? "text-emerald-500" : "text-cyan-500"
           )} />
           <span className="font-medium">Hydration</span>
           {isGoalMet && <span className="text-emerald-500 text-xs font-medium">✓ Goal!</span>}
-          {isSyncing && <div className="w-3 h-3 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin" />}
         </div>
         <button
           onClick={() => setShowTargetEdit(!showTargetEdit)}
@@ -290,50 +289,26 @@ function HydrationTracker({
         </button>
       </div>
 
-      {/* Tube Progress Bar */}
-      <div className="relative h-12 bg-muted/30 rounded-xl overflow-hidden mb-3">
-        {/* Background markers */}
-        <div className="absolute inset-0 flex">
-          {[0, 25, 50, 75, 100].map((mark) => (
-            <div key={mark} className="flex-1 border-r border-muted/30" />
-          ))}
-        </div>
-        
-        {/* Water fill with wave effect */}
+      {/* Tube Progress Bar - Simple and fast */}
+      <div className="relative h-10 bg-muted/30 rounded-xl overflow-hidden mb-3">
+        {/* Water fill - instant spring animation */}
         <motion.div
           className={cn(
             "absolute bottom-0 left-0 right-0 rounded-xl",
             isExceeded 
-              ? "bg-gradient-to-t from-rose-500/60 to-rose-400/40"
+              ? "bg-gradient-to-t from-rose-500 to-rose-400"
               : isGoalMet
-                ? "bg-gradient-to-t from-emerald-500/60 to-emerald-400/40"
-                : "bg-gradient-to-t from-cyan-500/60 to-cyan-400/40"
+                ? "bg-gradient-to-t from-emerald-500 to-emerald-400"
+                : "bg-gradient-to-t from-cyan-500 to-cyan-400"
           )}
-          initial={{ height: 0 }}
+          initial={false}
           animate={{ height: `${percentage}%` }}
-          transition={{ type: "spring", stiffness: 200, damping: 20, mass: 0.5 }}
-        >
-          {/* Wave overlay */}
-          <div className="absolute inset-x-0 top-0 h-3 overflow-hidden">
-            <div className={cn(
-              "absolute inset-0 animate-[wave_2s_ease-in-out_infinite]",
-              isExceeded 
-                ? "bg-gradient-to-r from-transparent via-rose-300/30 to-transparent"
-                : isGoalMet
-                  ? "bg-gradient-to-r from-transparent via-emerald-300/30 to-transparent"
-                  : "bg-gradient-to-r from-transparent via-cyan-300/30 to-transparent"
-            )} 
-            style={{ transform: 'translateX(-100%)' }}
-            />
-          </div>
-        </motion.div>
+          transition={{ type: "spring", stiffness: 400, damping: 30 }}
+        />
         
         {/* Percentage text */}
         <div className="absolute inset-0 flex items-center justify-center">
-          <span className={cn(
-            "text-sm font-bold",
-            percentage > 50 ? "text-white" : "text-foreground"
-          )}>
+          <span className="text-sm font-bold text-white drop-shadow-sm">
             {Math.round(percentage)}%
           </span>
         </div>
@@ -373,7 +348,7 @@ function HydrationTracker({
         )}
       </AnimatePresence>
 
-      {/* Action buttons */}
+      {/* Action buttons - Instant response */}
       <div className="flex items-center gap-2">
         {/* Quick add buttons */}
         {waterAmounts.map((amount) => (
@@ -381,12 +356,12 @@ function HydrationTracker({
             key={amount.ml}
             onClick={() => handleAddWater(amount.ml)}
             className={cn(
-              "flex-1 py-2.5 px-3 rounded-xl text-sm font-medium transition-all duration-150 active:scale-95 touch-manipulation",
+              "flex-1 py-2.5 px-3 rounded-xl text-sm font-medium active:scale-[0.97] touch-manipulation transition-transform",
               isExceeded
-                ? "bg-rose-500/20 text-rose-600 dark:text-rose-400 hover:bg-rose-500/30"
+                ? "bg-rose-500/20 text-rose-600 dark:text-rose-400"
                 : isGoalMet
-                  ? "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/30"
-                  : "bg-cyan-500/20 text-cyan-600 dark:text-cyan-400 hover:bg-cyan-500/30"
+                  ? "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400"
+                  : "bg-cyan-500/20 text-cyan-600 dark:text-cyan-400"
             )}
           >
             +{amount.ml}
@@ -398,8 +373,8 @@ function HydrationTracker({
           <button
             onClick={() => setShowActions(!showActions)}
             className={cn(
-              "w-10 h-10 rounded-xl flex items-center justify-center transition-colors",
-              showActions ? "bg-muted" : "bg-muted/50 hover:bg-muted"
+              "w-10 h-10 rounded-xl flex items-center justify-center",
+              showActions ? "bg-muted" : "bg-muted/50"
             )}
           >
             <span className="text-xs font-medium">{entries.length}</span>
@@ -407,28 +382,26 @@ function HydrationTracker({
         )}
       </div>
 
-      {/* Undo/Clear buttons */}
+      {/* Undo/Clear buttons - Instant */}
       <AnimatePresence>
         {showActions && entries.length > 0 && (
           <motion.div
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.2 }}
+            transition={{ duration: 0.15 }}
             className="overflow-hidden mt-2"
           >
             <div className="flex items-center gap-2 pt-2 border-t border-muted/30">
               <button
                 onClick={handleRemoveWater}
-                disabled={isSyncing}
-                className="flex-1 py-2 px-3 rounded-xl text-sm font-medium bg-amber-500/20 text-amber-600 dark:text-amber-400 hover:bg-amber-500/30 transition-colors touch-manipulation disabled:opacity-50 active:scale-95"
+                className="flex-1 py-2 px-3 rounded-xl text-sm font-medium bg-amber-500/20 text-amber-600 dark:text-amber-400 active:scale-[0.97] touch-manipulation transition-transform"
               >
                 Undo Last
               </button>
               <button
                 onClick={handleClearWater}
-                disabled={isSyncing}
-                className="flex-1 py-2 px-3 rounded-xl text-sm font-medium bg-rose-500/20 text-rose-600 dark:text-rose-400 hover:bg-rose-500/30 transition-colors touch-manipulation disabled:opacity-50 active:scale-95"
+                className="flex-1 py-2 px-3 rounded-xl text-sm font-medium bg-rose-500/20 text-rose-600 dark:text-rose-400 active:scale-[0.97] touch-manipulation transition-transform"
               >
                 Clear All
               </button>

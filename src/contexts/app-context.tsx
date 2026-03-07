@@ -1288,16 +1288,27 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
   }, [fetchFoodLog, fetchNutrition]);
   
-  // Hydration Actions
+  // Hydration Actions - Instant UI, background sync
   const addWater = useCallback(async (ml: number) => {
-    // Optimistic update
-    setHydration(prev => ({
-      ...prev,
-      current: prev.current + ml,
-      glasses: Math.floor((prev.current + ml) / 250),
-    }));
+    // Instant optimistic update - no loading state for simple additions
+    const tempId = `water-${Date.now()}`;
+    const now = new Date().toISOString();
     
-    setHydrationSyncing(true);
+    setHydration(prev => {
+      const newCurrent = prev.current + ml;
+      return {
+        ...prev,
+        current: newCurrent,
+        glasses: Math.floor(newCurrent / 250),
+        // Add temporary entry for immediate display
+        entries: [
+          { id: tempId, value: ml, capturedAt: now, measurementType: 'water', unit: 'ml', source: 'manual' },
+          ...prev.entries,
+        ],
+      };
+    });
+    
+    // Background sync - don't block UI, don't show loading
     try {
       const response = await fetch('/api/measurements', {
         method: 'POST',
@@ -1310,68 +1321,93 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           ...prev,
           current: prev.current - ml,
           glasses: Math.floor((prev.current - ml) / 250),
+          entries: prev.entries.filter(e => e.id !== tempId),
         }));
         throw new Error('Failed to add water');
       }
-      fetchHydration(false);
+      // Replace temp entry with real one from server (silent refresh)
+      const data = await response.json();
+      if (data.measurement?.id) {
+        setHydration(prev => ({
+          ...prev,
+          entries: prev.entries.map(e => 
+            e.id === tempId ? { ...e, id: data.measurement.id } : e
+          ),
+        }));
+      }
       incrementDataVersion();
     } catch (err) {
       console.error('Error adding water:', err);
-      throw err;
-    } finally {
-      setHydrationSyncing(false);
+      // Error already handled with revert above
     }
-  }, [fetchHydration, incrementDataVersion]);
+    // No finally block - no loading state to clear
+  }, [incrementDataVersion]);
   
   const removeLastWater = useCallback(async () => {
-    const latestEntry = hydration.entries[0];
-    if (!latestEntry) return;
+    // Get the latest entry from current state
+    let removedEntry: { id: string; value: number } | null = null;
     
-    // Optimistic update
-    setHydration(prev => ({
-      ...prev,
-      current: Math.max(0, prev.current - latestEntry.value),
-      glasses: Math.floor(Math.max(0, prev.current - latestEntry.value) / 250),
-    }));
+    setHydration(prev => {
+      const latestEntry = prev.entries[0];
+      if (!latestEntry) return prev;
+      
+      removedEntry = latestEntry;
+      const newCurrent = Math.max(0, prev.current - latestEntry.value);
+      return {
+        ...prev,
+        current: newCurrent,
+        glasses: Math.floor(newCurrent / 250),
+        entries: prev.entries.slice(1),
+      };
+    });
     
-    setHydrationSyncing(true);
+    // If no entry was removed, return
+    if (!removedEntry) return;
+    
+    // Background sync - don't block UI
     try {
-      const response = await fetch(`/api/measurements?id=${latestEntry.id}`, { method: 'DELETE' });
+      const response = await fetch(`/api/measurements?id=${removedEntry.id}`, { method: 'DELETE' });
       if (!response.ok) {
-        setHydration(prev => ({
-          ...prev,
-          current: prev.current + latestEntry.value,
-          glasses: Math.floor((prev.current + latestEntry.value) / 250),
-        }));
+        // Revert on failure
+        setHydration(prev => {
+          const newCurrent = prev.current + removedEntry!.value;
+          return {
+            ...prev,
+            current: newCurrent,
+            glasses: Math.floor(newCurrent / 250),
+            entries: [{ id: removedEntry!.id, value: removedEntry!.value, capturedAt: new Date().toISOString(), measurementType: 'water', unit: 'ml', source: 'manual' }, ...prev.entries],
+          };
+        });
         throw new Error('Failed to remove water');
       }
-      fetchHydration(false);
       incrementDataVersion();
     } catch (err) {
       console.error('Error removing water:', err);
-      throw err;
-    } finally {
-      setHydrationSyncing(false);
     }
-  }, [hydration.entries, fetchHydration, incrementDataVersion]);
+  }, [incrementDataVersion]);
   
   const clearAllWater = useCallback(async () => {
-    const previousCurrent = hydration.current;
-    const previousEntries = hydration.entries;
+    let previousEntries: { id: string; value: number }[] = [];
+    let previousCurrent = 0;
     
-    // Optimistic update
-    setHydration(prev => ({
-      ...prev,
-      current: 0,
-      glasses: 0,
-      entries: [],
-    }));
+    // Instant optimistic update
+    setHydration(prev => {
+      previousEntries = prev.entries;
+      previousCurrent = prev.current;
+      return {
+        ...prev,
+        current: 0,
+        glasses: 0,
+        entries: [],
+      };
+    });
     
-    setHydrationSyncing(true);
+    // Background sync
     try {
       const dateParam = new Date().toISOString().split('T')[0];
       const response = await fetch(`/api/measurements?type=water&date=${dateParam}`, { method: 'DELETE' });
       if (!response.ok) {
+        // Revert on failure
         setHydration(prev => ({
           ...prev,
           current: previousCurrent,
@@ -1383,11 +1419,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       incrementDataVersion();
     } catch (err) {
       console.error('Error clearing water:', err);
-      throw err;
-    } finally {
-      setHydrationSyncing(false);
     }
-  }, [hydration, incrementDataVersion]);
+  }, [incrementDataVersion]);
   
   const updateWaterTarget = useCallback(async (ml: number) => {
     const clampedTarget = Math.max(500, Math.min(5000, ml));
