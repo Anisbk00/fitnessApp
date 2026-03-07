@@ -56,6 +56,7 @@ export async function GET(request: NextRequest) {
       carbs: entry.carbs,
       fat: entry.fat,
       source: entry.source,
+      mealType: entry.mealType || 'snack',
       loggedAt: entry.loggedAt.toISOString(),
       rationale: entry.rationale,
       food: entry.Food ? { id: entry.Food.id, name: entry.Food.name } : null,
@@ -94,6 +95,10 @@ export async function POST(request: NextRequest) {
     // Generate unique ID
     const id = `fle_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     
+    // Validate mealType
+    const validMealTypes = ['breakfast', 'lunch', 'dinner', 'snack', 'supplements'];
+    const mealType = validMealTypes.includes(body.mealType) ? body.mealType : 'snack';
+
     // Create entry in local Prisma database
     const entry = await db.foodLogEntry.create({
       data: {
@@ -107,7 +112,8 @@ export async function POST(request: NextRequest) {
         carbs: parseFloat(body.carbs) || 0,
         fat: parseFloat(body.fat) || 0,
         source: body.source || 'manual',
-        rationale: body.rationale || body.notes || null,
+        mealType: mealType,
+        rationale: body.rationale || body.notes || (body.foodName ? `Food: ${body.foodName}` : null),
         loggedAt: body.loggedAt ? new Date(body.loggedAt) : new Date(),
       },
       include: {
@@ -128,6 +134,7 @@ export async function POST(request: NextRequest) {
       carbs: entry.carbs,
       fat: entry.fat,
       source: entry.source,
+      mealType: entry.mealType,
       loggedAt: entry.loggedAt.toISOString(),
       rationale: entry.rationale,
       food: entry.Food ? { id: entry.Food.id, name: entry.Food.name } : null,
@@ -203,6 +210,10 @@ export async function PUT(request: NextRequest) {
     if (updateData.fat !== undefined) dbUpdates.fat = parseFloat(updateData.fat);
     if (updateData.source !== undefined) dbUpdates.source = updateData.source;
     if (updateData.rationale !== undefined) dbUpdates.rationale = updateData.rationale;
+    if (updateData.mealType !== undefined) {
+      const validMealTypes = ['breakfast', 'lunch', 'dinner', 'snack', 'supplements'];
+      dbUpdates.mealType = validMealTypes.includes(updateData.mealType) ? updateData.mealType : 'snack';
+    }
     
     // Update entry
     const entry = await db.foodLogEntry.update({
@@ -226,6 +237,7 @@ export async function PUT(request: NextRequest) {
       carbs: entry.carbs,
       fat: entry.fat,
       source: entry.source,
+      mealType: entry.mealType,
       loggedAt: entry.loggedAt.toISOString(),
       rationale: entry.rationale,
       food: entry.Food ? { id: entry.Food.id, name: entry.Food.name } : null,

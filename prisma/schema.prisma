@@ -153,6 +153,7 @@ model FoodLogEntry {
   carbs      Float    @default(0)
   fat        Float    @default(0)
   source     String   @default("manual")
+  mealType   String   @default("snack") // breakfast, lunch, dinner, snack, supplements
   confidence Float    @default(1.0)
   rationale  String?
   loggedAt   DateTime @default(now())

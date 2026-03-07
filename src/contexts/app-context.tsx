@@ -68,6 +68,7 @@ export interface FoodLogEntry {
   carbs: number;
   fat: number;
   source: string;
+  mealType?: string; // breakfast, lunch, dinner, snack, supplements
   loggedAt: string;
   rationale?: string | null;
   food: {
@@ -862,6 +863,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       carbs: entry.carbs || 0,
       fat: entry.fat || 0,
       source: entry.source || 'manual',
+      mealType: entry.mealType || 'snack',
       loggedAt: now,
       rationale: entry.foodName ? `Food: ${entry.foodName}` : null,
       food: entry.foodName ? { id: entry.foodId || 'unknown', name: entry.foodName } : null,
@@ -896,6 +898,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           carbs: entry.carbs,
           fat: entry.fat,
           source: entry.source,
+          mealType: entry.mealType,
         }),
       });
       if (!response.ok) {
@@ -954,6 +957,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           carbs: entry.carbs,
           fat: entry.fat,
           source: entry.source,
+          mealType: entry.mealType,
         }),
       });
       if (!response.ok) {

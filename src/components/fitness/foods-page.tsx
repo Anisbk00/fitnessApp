@@ -1192,7 +1192,8 @@ export function FoodsPage() {
       // Skip supplements - they're handled separately
       if (entry.source === 'supplements') return;
       
-      const mealType = (entry.source as MealType) || "snack";
+      // Use mealType field for grouping, fallback to snack if not set
+      const mealType = (entry.mealType as MealType) || "snack";
       const entriesForMeal = mealMap.get(mealType) || [];
 
       // Extract food name from rationale if food relation is null
